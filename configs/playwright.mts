@@ -1,6 +1,7 @@
 import path from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
+import { existsSync } from 'fs'
 
 const PREVIEW_PORT = 4173
 
@@ -24,7 +25,10 @@ try {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const libraryRoot = path.dirname(__dirname)
-const viteBin = path.resolve(libraryRoot, 'node_modules', '.bin', 'vite')
+const appViteBin = path.resolve(process.cwd(), 'node_modules', '.bin', 'vite')
+const viteBin = existsSync(appViteBin)
+  ? appViteBin
+  : path.resolve(libraryRoot, 'node_modules', '.bin', 'vite')
 const viteConfig = path.resolve(libraryRoot, 'vite.config.ts')
 
 export default defineConfig({
@@ -34,8 +38,6 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
   },
   webServer: {
-    // Invoke vite directly so it always runs from the library's node_modules,
-    // ensuring packages like tailwindcss resolve correctly regardless of the app.
     command: `"${viteBin}" build --config "${viteConfig}" && "${viteBin}" preview --config "${viteConfig}" --port ${PREVIEW_PORT} --strictPort`,
     cwd: process.cwd(),
     port: PREVIEW_PORT,

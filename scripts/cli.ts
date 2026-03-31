@@ -224,9 +224,9 @@ async function screenshotsCommand(_args: string[]) {
     const playwrightConfig = path.resolve(
       libraryRoot,
       'configs',
-      'playwright.ts',
+      'playwright.mts',
     )
-    execSync(`bun "${playwrightBin}" test --config "${playwrightConfig}"`, {
+    execSync(`"${playwrightBin}" test --config "${playwrightConfig}"`, {
       stdio: 'inherit',
       cwd: process.cwd(),
       env: {
