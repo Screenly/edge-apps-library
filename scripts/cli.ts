@@ -188,12 +188,12 @@ async function typeCheckCommand(args: string[]) {
   try {
     const tscBin = resolveBin('tsc')
 
-    const tscArgs = [
-      '--noEmit',
-      '--project',
-      path.resolve(process.cwd(), 'tsconfig.json'),
-      ...args,
-    ]
+    const appTsConfig = path.resolve(process.cwd(), 'tsconfig.json')
+    const tsConfig = fs.existsSync(appTsConfig)
+      ? appTsConfig
+      : path.resolve(libraryRoot, 'tsconfig.json')
+
+    const tscArgs = ['--noEmit', '--project', tsConfig, ...args]
 
     execSync(`"${tscBin}" ${tscArgs.map((arg) => `"${arg}"`).join(' ')}`, {
       stdio: 'inherit',
