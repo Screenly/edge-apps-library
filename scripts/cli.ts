@@ -191,7 +191,7 @@ async function typeCheckCommand(args: string[]) {
     const tscArgs = [
       '--noEmit',
       '--project',
-      path.resolve(libraryRoot, 'tsconfig.json'),
+      path.resolve(process.cwd(), 'tsconfig.json'),
       ...args,
     ]
 
