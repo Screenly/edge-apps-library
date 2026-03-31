@@ -1,6 +1,6 @@
 {
   "name": "@screenly/edge-apps",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
   "main": "./dist/index.js",
@@ -48,6 +48,7 @@
     "scripts",
     "vite-plugins",
     "eslint.config.ts",
+    "tsconfig.json",
     "vite.config.ts",
     "src/styles",
     "src/assets"
