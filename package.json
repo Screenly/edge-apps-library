@@ -1,6 +1,6 @@
 {
   "name": "@screenly/edge-apps",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
   "main": "./dist/index.js",
@@ -51,6 +51,7 @@
     "src/assets"
   ],
   "scripts": {
+    "prepublishOnly": "bun run build",
     "prebuild": "bun run type-check",
     "build": "bun build:types && bun run copy:assets",
     "build:types": "tsc",
