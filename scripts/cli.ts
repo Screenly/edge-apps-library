@@ -46,6 +46,16 @@ const commands = {
 }
 
 /**
+ * Helper: Resolve a binary from the app's node_modules first, falling back to the library's
+ */
+function resolveBin(name: string): string {
+  const appBin = path.resolve(process.cwd(), 'node_modules', '.bin', name)
+  return fs.existsSync(appBin)
+    ? appBin
+    : path.resolve(libraryRoot, 'node_modules', '.bin', name)
+}
+
+/**
  * Helper: Get NODE_PATH with library's node_modules included
  */
 function getNodePath(): string {
@@ -99,19 +109,14 @@ function spawnWithSignalHandling(
  */
 function getVitePaths(): { viteBin: string; configPath: string } {
   return {
-    viteBin: path.resolve(libraryRoot, 'node_modules', '.bin', 'vite'),
+    viteBin: resolveBin('vite'),
     configPath: path.resolve(libraryRoot, 'vite.config.ts'),
   }
 }
 
 async function lintCommand(args: string[]) {
   try {
-    const eslintBin = path.resolve(
-      libraryRoot,
-      'node_modules',
-      '.bin',
-      'eslint',
-    )
+    const eslintBin = resolveBin('eslint')
 
     const eslintArgs = [
       '--config',
@@ -181,7 +186,7 @@ async function buildDevCommand(args: string[]) {
 
 async function typeCheckCommand(args: string[]) {
   try {
-    const tscBin = path.resolve(libraryRoot, 'node_modules', '.bin', 'tsc')
+    const tscBin = resolveBin('tsc')
 
     const tscArgs = [
       '--noEmit',
@@ -215,12 +220,7 @@ async function convertPngsToWebP(screenshotsDir: string): Promise<void> {
 
 async function screenshotsCommand(_args: string[]) {
   try {
-    const playwrightBin = path.resolve(
-      process.cwd(),
-      'node_modules',
-      '.bin',
-      'playwright',
-    )
+    const playwrightBin = resolveBin('playwright')
     const playwrightConfig = path.resolve(
       libraryRoot,
       'configs',
