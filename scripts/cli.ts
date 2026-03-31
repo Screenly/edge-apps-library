@@ -226,7 +226,7 @@ async function screenshotsCommand(_args: string[]) {
       'configs',
       'playwright.ts',
     )
-    execSync(`"${playwrightBin}" test --config "${playwrightConfig}"`, {
+    execSync(`bun "${playwrightBin}" test --config "${playwrightConfig}"`, {
       stdio: 'inherit',
       cwd: process.cwd(),
       env: {
