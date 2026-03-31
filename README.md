@@ -4,16 +4,20 @@ A TypeScript library for interfacing with the Screenly Edge Apps API.
 
 ## Installation
 
+> [!IMPORTANT]
+> This package requires [Bun](https://bun.sh). The `edge-apps-scripts` CLI will not work with `npm` or `node` at this time.
+
 ```bash
 bun add @screenly/edge-apps
 ```
 
 ### Local Development Setup
 
-When developing Edge Apps locally using the library from this repository, you should link the package:
+When developing Edge Apps locally using the library from this repository, you should link the package.
+
+First, in the root of this repository:
 
 ```bash
-cd edge-apps/edge-apps-library
 bun link
 ```
 
@@ -21,13 +25,18 @@ Then in your Edge App directory:
 
 ```bash
 cd /path/to/your-edge-app
-bun install
+bun link @screenly/edge-apps
 ```
 
-To unlink the package when you're done with local development:
+To unlink the package when you're done with local development, run the following in your Edge App directory:
 
 ```bash
-cd edge-apps/edge-apps-library
+bun install --force
+```
+
+Then in the root of this repository:
+
+```bash
 bun unlink
 ```
 

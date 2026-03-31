@@ -71,6 +71,9 @@
   ],
   "author": "Screenly",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@photostructure/tz-lookup": "^11.5.0",
     "dayjs": "^1.11.19",
