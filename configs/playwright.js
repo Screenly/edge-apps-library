@@ -1,3 +1,4 @@
+/* global process */
 import path from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
@@ -5,11 +6,10 @@ import { existsSync } from 'fs'
 
 const PREVIEW_PORT = 4173
 
-// Resolve @playwright/test from the calling app's node_modules, not the library's
 const appRequire = createRequire(path.join(process.cwd(), 'package.json'))
 
-let defineConfig: typeof import('@playwright/test').defineConfig
-let devices: typeof import('@playwright/test').devices
+let defineConfig
+let devices
 
 try {
   const playwrightTest = appRequire('@playwright/test')

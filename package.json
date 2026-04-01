@@ -1,6 +1,6 @@
 {
   "name": "@screenly/edge-apps",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
   "main": "./dist/index.js",
