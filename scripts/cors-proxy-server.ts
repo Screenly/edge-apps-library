@@ -7,6 +7,8 @@ const host = process.env.HOST || '0.0.0.0'
 // Listen on a specific port via the PORT environment variable
 const port = process.env.PORT || 8080
 
+const MAX_REDIRECTS = 10
+
 // This script is for development purposes only and should never be deployed to production.
 // Disabling TLS certificate validation is a critical security risk.
 // Only use this in local development environments.
@@ -27,12 +29,27 @@ function handleRedirect(
   req: http.IncomingMessage,
   res: http.ServerResponse,
   proxyRes: http.IncomingMessage,
+  currentUrl: URL,
+  redirectCount: number,
 ) {
+  if (redirectCount >= MAX_REDIRECTS) {
+    proxyRes.resume()
+    res.writeHead(508, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Too many redirects' }))
+    return
+  }
+
   try {
-    const redirectUrl = new URL(location)
+    const redirectUrl = new URL(location, currentUrl)
+    if (redirectUrl.protocol !== 'http:' && redirectUrl.protocol !== 'https:') {
+      proxyRes.resume()
+      res.writeHead(502, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Invalid redirect location' }))
+      return
+    }
     const redirectModule = redirectUrl.protocol === 'https:' ? https : http
     proxyRes.resume()
-    makeProxyRequest(redirectModule, redirectUrl, req, res)
+    makeProxyRequest(redirectModule, redirectUrl, req, res, redirectCount + 1)
   } catch {
     res.writeHead(502, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Invalid redirect location' }))
@@ -43,13 +60,23 @@ function handleProxyResponse(
   proxyRes: http.IncomingMessage,
   req: http.IncomingMessage,
   res: http.ServerResponse,
+  currentUrl: URL,
+  redirectCount: number,
 ) {
   if (
     proxyRes.statusCode >= 301 &&
     proxyRes.statusCode <= 308 &&
-    proxyRes.headers.location
+    proxyRes.headers.location &&
+    ['GET', 'HEAD'].includes(req.method)
   ) {
-    handleRedirect(proxyRes.headers.location, req, res, proxyRes)
+    handleRedirect(
+      proxyRes.headers.location,
+      req,
+      res,
+      proxyRes,
+      currentUrl,
+      redirectCount,
+    )
     return
   }
 
@@ -80,6 +107,7 @@ function makeProxyRequest(
   parsedUrl: URL,
   req: http.IncomingMessage,
   res: http.ServerResponse,
+  redirectCount = 0,
 ) {
   const options = {
     hostname: parsedUrl.hostname,
@@ -98,7 +126,7 @@ function makeProxyRequest(
   delete options.headers['x-forwarded-host']
 
   const proxyReq = httpModule.request(options, (proxyRes) =>
-    handleProxyResponse(proxyRes, req, res),
+    handleProxyResponse(proxyRes, req, res, parsedUrl, redirectCount),
   )
 
   proxyReq.on('error', (error) => {
