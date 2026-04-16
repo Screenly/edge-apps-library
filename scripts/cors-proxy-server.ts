@@ -22,6 +22,59 @@ function setCorsHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Max-Age', '86400')
 }
 
+function handleRedirect(
+  location: string,
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  proxyRes: http.IncomingMessage,
+) {
+  try {
+    const redirectUrl = new URL(location)
+    const redirectModule = redirectUrl.protocol === 'https:' ? https : http
+    proxyRes.resume()
+    makeProxyRequest(redirectModule, redirectUrl, req, res)
+  } catch {
+    res.writeHead(502, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Invalid redirect location' }))
+  }
+}
+
+function handleProxyResponse(
+  proxyRes: http.IncomingMessage,
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+) {
+  if (
+    proxyRes.statusCode >= 301 &&
+    proxyRes.statusCode <= 308 &&
+    proxyRes.headers.location
+  ) {
+    handleRedirect(proxyRes.headers.location, req, res, proxyRes)
+    return
+  }
+
+  const excludeHeaders = [
+    'connection',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'te',
+    'trailers',
+    'transfer-encoding',
+    'upgrade',
+  ]
+
+  Object.keys(proxyRes.headers).forEach((key) => {
+    if (!excludeHeaders.includes(key.toLowerCase())) {
+      res.setHeader(key, proxyRes.headers[key])
+    }
+  })
+
+  setCorsHeaders(res)
+  res.writeHead(proxyRes.statusCode)
+  proxyRes.pipe(res)
+}
+
 function makeProxyRequest(
   httpModule: typeof http | typeof https,
   parsedUrl: URL,
@@ -44,38 +97,15 @@ function makeProxyRequest(
   delete options.headers['x-forwarded-proto']
   delete options.headers['x-forwarded-host']
 
-  const proxyReq = httpModule.request(options, (proxyRes) => {
-    const excludeHeaders = [
-      'connection',
-      'keep-alive',
-      'proxy-authenticate',
-      'proxy-authorization',
-      'te',
-      'trailers',
-      'transfer-encoding',
-      'upgrade',
-    ]
-
-    Object.keys(proxyRes.headers).forEach((key) => {
-      if (!excludeHeaders.includes(key.toLowerCase())) {
-        res.setHeader(key, proxyRes.headers[key])
-      }
-    })
-
-    res.writeHead(proxyRes.statusCode)
-    proxyRes.pipe(res)
-  })
+  const proxyReq = httpModule.request(options, (proxyRes) =>
+    handleProxyResponse(proxyRes, req, res),
+  )
 
   proxyReq.on('error', (error) => {
     console.error('Proxy error:', error.message)
     if (!res.headersSent) {
       res.writeHead(500, { 'Content-Type': 'application/json' })
-      res.end(
-        JSON.stringify({
-          error: 'Proxy error',
-          message: error.message,
-        }),
-      )
+      res.end(JSON.stringify({ error: 'Proxy error', message: error.message }))
     }
   })
 
@@ -83,11 +113,7 @@ function makeProxyRequest(
     proxyReq.destroy()
     if (!res.headersSent) {
       res.writeHead(504, { 'Content-Type': 'application/json' })
-      res.end(
-        JSON.stringify({
-          error: 'Gateway timeout',
-        }),
-      )
+      res.end(JSON.stringify({ error: 'Gateway timeout' }))
     }
   })
 
