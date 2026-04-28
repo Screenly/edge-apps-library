@@ -70,7 +70,13 @@ signalReady()
 ### Metadata
 
 - `getMetadata()` - Get all screen metadata
-- `getScreenName()`, `getHostname()`, `getLocation()`, `getScreenlyVersion()`, `getTags()`, `hasTag(tag)`, `getFormattedCoordinates()`
+- `getScreenName()`
+- `getHostname()`
+- `getLocation()`
+- `getScreenlyVersion()`
+- `getTags()`
+- `hasTag(tag)`
+- `getFormattedCoordinates()`
 - `getHardware()` - Get hardware type as `Hardware` enum (`Anywhere`, `RaspberryPi`, or `ScreenlyPlayerMax`)
 
 ### Location & Localization
@@ -88,6 +94,10 @@ signalReady()
 
 - `addUTMParams(url, params?)` - Add UTM parameters to URL
 - `addUTMParamsIf(url, enabled, params?)` - Conditionally add UTM parameters
+
+## Web Components
+
+This library includes reusable web components for building consistent Edge Apps. See the [components documentation](src/components/README.md) for usage details.
 
 ## Edge Apps Scripts CLI
 
