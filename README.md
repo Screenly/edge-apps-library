@@ -1,5 +1,7 @@
 # @screenly/edge-apps
 
+[![npm version](https://img.shields.io/npm/v/@screenly/edge-apps)](https://www.npmjs.com/package/@screenly/edge-apps)
+
 A TypeScript library for interfacing with the Screenly Edge Apps API.
 
 ## Installation
