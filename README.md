@@ -1,5 +1,7 @@
 # @screenly/edge-apps
 
+[![npm version](https://img.shields.io/npm/v/%40screenly%2Fedge-apps)](https://www.npmjs.com/package/@screenly/edge-apps)
+
 A TypeScript library for interfacing with the Screenly Edge Apps API.
 
 ## Installation
@@ -68,7 +70,13 @@ signalReady()
 ### Metadata
 
 - `getMetadata()` - Get all screen metadata
-- `getScreenName()`, `getHostname()`, `getLocation()`, `getScreenlyVersion()`, `getTags()`, `hasTag(tag)`, `getFormattedCoordinates()`
+- `getScreenName()`
+- `getHostname()`
+- `getLocation()`
+- `getScreenlyVersion()`
+- `getTags()`
+- `hasTag(tag)`
+- `getFormattedCoordinates()`
 - `getHardware()` - Get hardware type as `Hardware` enum (`Anywhere`, `RaspberryPi`, or `ScreenlyPlayerMax`)
 
 ### Location & Localization
@@ -86,6 +94,10 @@ signalReady()
 
 - `addUTMParams(url, params?)` - Add UTM parameters to URL
 - `addUTMParamsIf(url, enabled, params?)` - Conditionally add UTM parameters
+
+## Web Components
+
+This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/master/docs/components.md) for usage details.
 
 ## Edge Apps Scripts CLI
 

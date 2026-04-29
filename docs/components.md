@@ -95,50 +95,6 @@ A flexible header component with branding and time display.
 <app-header show-time="false" show-date="false"></app-header>
 ```
 
-## Suggested Components to Build
-
-Based on common patterns across Edge Apps, here are suggested components:
-
-### 1. **`<edge-header>`** - Flexible Header Component
-
-- Brand logo/name on left
-- Time/date display on right
-- Optional subtitle or additional content
-- Configurable styling
-
-### 2. **`<edge-time>`** - Time Display Component
-
-- Real-time clock updates
-- Configurable format (12h/24h)
-- Locale-aware formatting
-- Timezone support
-
-### 3. **`<edge-date>`** - Date Display Component
-
-- Locale-aware date formatting
-- Multiple format options (short, long, etc.)
-- Timezone support
-
-### 4. **`<edge-card>`** - Content Card Component
-
-- Consistent card styling
-- Optional header/footer slots
-- Glass morphism effects
-- Responsive padding
-
-### 5. **`<edge-chip>`** - Badge/Chip Component
-
-- Small informational badges
-- Status indicators
-- Icon + text support
-
-### 6. **`<edge-weather>`** - Weather Display Component
-
-- Current temperature
-- Weather icon
-- Location display
-- Optional forecast
-
 ## Component Guidelines
 
 When creating new components:
