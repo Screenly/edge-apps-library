@@ -151,7 +151,15 @@ async function devCommand(args: string[]) {
 async function buildCommand(args: string[]) {
   try {
     const { viteBin, configPath } = getVitePaths()
-    const viteArgs = ['build', '--config', configPath, ...args]
+    const sourcemaps = args.includes('--sourcemaps')
+    const filteredArgs = args.filter((arg) => arg !== '--sourcemaps')
+    const viteArgs = [
+      'build',
+      '--config',
+      configPath,
+      ...(sourcemaps ? ['--sourcemap'] : []),
+      ...filteredArgs,
+    ]
 
     execSync(`"${viteBin}" ${viteArgs.map((arg) => `"${arg}"`).join(' ')}`, {
       stdio: 'inherit',
