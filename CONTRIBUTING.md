@@ -4,15 +4,15 @@
 
 ### Versioning
 
-This project follows [Semantic Versioning](https://semver.org/). Pre-release tags use the format `0.1.0-rc.1`.
+This project follows [Semantic Versioning](https://semver.org/). Git tags are always `v`-prefixed (e.g. `v1.2.3`). Pre-release tags use the format `v1.2.3-rc.1`.
 
-| Change type                       | Example             |
-| --------------------------------- | ------------------- |
-| Bug fix (patch)                   | `0.0.17` → `0.0.18` |
-| New feature, non-breaking (minor) | `0.0.17` → `0.1.0`  |
-| Breaking change (major)           | `0.1.0` → `1.0.0`   |
+| Change type                       | Example               |
+| --------------------------------- | --------------------- |
+| Bug fix (patch)                   | `v0.0.17` → `v0.0.18` |
+| New feature, non-breaking (minor) | `v0.0.17` → `v0.1.0`  |
+| Breaking change (major)           | `v0.1.0` → `v1.0.0`   |
 
-Use an `rc` pre-release tag (e.g. `0.1.0-rc.1`) before promoting to a stable release.
+Use an `rc` pre-release tag (e.g. `v1.2.3-rc.1`) before promoting to a stable release.
 
 ### Steps
 
