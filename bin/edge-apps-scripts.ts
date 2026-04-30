@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import jiti/register
 /**
  * Edge Apps Scripts CLI
  * Wrapper around build tools for Edge Apps
