@@ -18,17 +18,21 @@ Use an `rc` pre-release tag (e.g. `0.1.0-rc.1`) before promoting to a stable rel
 
 1. Bump the version in `package.json`.
 2. Commit the version bump and open a PR against `main`.
-3. Once merged, authenticate with the npm registry:
+3. Once merged, authenticate with the npm registry (requires Node.js/npm, or set your token directly in `~/.npmrc` as `//registry.npmjs.org/:_authToken=YOUR_TOKEN`):
    ```sh
    npm login
    ```
-4. Publish the package:
+4. Publish the package. For release candidates, use `--tag rc` to avoid overwriting the `latest` dist-tag:
+   ```sh
+   bun publish --tag rc
+   ```
+   For stable releases:
    ```sh
    bun publish
    ```
-5. Tag the release:
+5. Tag the release, replacing `vX.Y.Z` with the version from `package.json`:
    ```sh
-   git tag v0.1.0-rc.1
-   git push origin v0.1.0-rc.1
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
    ```
 6. Create a GitHub release from the tag.
