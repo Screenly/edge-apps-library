@@ -3,7 +3,7 @@
  * CLI command dispatcher for edge-apps-scripts
  */
 
-import { execSync, spawn, type ChildProcess } from 'child_process'
+import { execSync, execFileSync, spawn, type ChildProcess } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -151,9 +151,17 @@ async function devCommand(args: string[]) {
 async function buildCommand(args: string[]) {
   try {
     const { viteBin, configPath } = getVitePaths()
-    const viteArgs = ['build', '--config', configPath, ...args]
+    const sourcemaps = args.includes('--sourcemaps')
+    const filteredArgs = args.filter((arg) => arg !== '--sourcemaps')
+    const viteArgs = [
+      'build',
+      '--config',
+      configPath,
+      ...(sourcemaps ? ['--sourcemap'] : []),
+      ...filteredArgs,
+    ]
 
-    execSync(`"${viteBin}" ${viteArgs.map((arg) => `"${arg}"`).join(' ')}`, {
+    execFileSync(viteBin, viteArgs, {
       stdio: 'inherit',
       cwd: process.cwd(),
       env: {
