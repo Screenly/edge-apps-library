@@ -2,11 +2,13 @@
 // stacktracey → get-source → data-uri-to-buffer (v2) uses Node's Buffer API, which
 // doesn't exist in browsers. This can be removed once get-source ships a version
 // that depends on data-uri-to-buffer v4+, which uses Uint8Array instead.
-if (typeof globalThis.Buffer === 'undefined') {
+export function installBufferShim(): void {
+  if (typeof globalThis.Buffer !== 'undefined') return
+
   globalThis.Buffer = {
     from(
       data: string,
-      encoding: string,
+      encoding?: string,
     ): Uint8Array & { type?: string; typeFull?: string; charset?: string } {
       if (encoding === 'base64') {
         const bin = atob(data)
@@ -26,3 +28,5 @@ if (typeof globalThis.Buffer === 'undefined') {
     },
   } as unknown as typeof Buffer
 }
+
+installBufferShim()
