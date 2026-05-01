@@ -3,6 +3,9 @@
   "version": "1.0.0-rc.1",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
+  "engines": {
+    "node": ">=20.6.0"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
