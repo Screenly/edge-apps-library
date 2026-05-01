@@ -18,7 +18,7 @@ try {
 } catch {
   throw new Error(
     "Failed to resolve '@playwright/test' from the application. " +
-      "Please install it in your app (e.g. 'bun add -d @playwright/test') " +
+      "Please install it in your app (e.g. 'npm install -D @playwright/test') " +
       'and try again.',
   )
 }

@@ -1,5 +1,6 @@
 import eslint from '@eslint/js'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig(
@@ -32,6 +33,12 @@ export default defineConfig(
         skipBlankLines: true,
         skipComments: true,
       }],
+    },
+  },
+  {
+    files: ['scripts/**/*.js', 'bin/**/*.js'],
+    languageOptions: {
+      globals: globals.node,
     },
   },
   {
