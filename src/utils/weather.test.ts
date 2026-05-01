@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   isNightForTimestamp,
   getWeatherIconKey,
@@ -114,21 +114,28 @@ describe('weather', () => {
       setupScreenlyMock()
     })
 
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
     test('should return city name from API when API key is available', async () => {
       setupScreenlyMock(
         { location: 'Test Location' },
         { openweathermap_api_key: 'test-api-key' },
       )
 
-      global.fetch = vi.fn(async () => {
-        return new Response(
-          JSON.stringify([{ name: 'Mountain View', country: 'US' }]),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          },
-        )
-      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response(
+            JSON.stringify([{ name: 'Mountain View', country: 'US' }]),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          )
+        }),
+      )
 
       const result = await getCityName(37.39, -122.0812)
       expect(result).toBe('Mountain View, US')
@@ -147,12 +154,15 @@ describe('weather', () => {
         { openweathermap_api_key: 'test-api-key' },
       )
 
-      global.fetch = vi.fn(async () => {
-        return new Response('Not Found', {
-          status: 404,
-          statusText: 'Not Found',
-        })
-      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response('Not Found', {
+            status: 404,
+            statusText: 'Not Found',
+          })
+        }),
+      )
 
       const result = await getCityName(37.39, -122.0812)
       expect(result).toBe('Fallback City')
