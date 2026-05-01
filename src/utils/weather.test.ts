@@ -1,5 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import {
   isNightForTimestamp,
   getWeatherIconKey,
@@ -7,8 +7,6 @@ import {
   getCityName,
 } from './weather'
 import { setupScreenlyMock } from '../test/mock'
-
-const { mock } = await import('bun:test')
 
 describe('weather', () => {
   describe('isNightForTimestamp', () => {
@@ -122,7 +120,7 @@ describe('weather', () => {
         { openweathermap_api_key: 'test-api-key' },
       )
 
-      global.fetch = mock(async () => {
+      global.fetch = vi.fn(async () => {
         return new Response(
           JSON.stringify([{ name: 'Mountain View', country: 'US' }]),
           {
@@ -149,7 +147,7 @@ describe('weather', () => {
         { openweathermap_api_key: 'test-api-key' },
       )
 
-      global.fetch = mock(async () => {
+      global.fetch = vi.fn(async () => {
         return new Response('Not Found', {
           status: 404,
           statusText: 'Not Found',

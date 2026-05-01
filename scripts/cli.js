@@ -1,13 +1,11 @@
-#!/usr/bin/env bun
-/**
- * CLI command dispatcher for edge-apps-scripts
- */
+#!/usr/bin/env node
 
-import { execSync, execFileSync, spawn, type ChildProcess } from 'child_process'
+import { execSync, execFileSync, spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createCommand } from './create'
+import { createCommand } from './create.js'
+import { start as startCorsProxy } from './cors-proxy-server.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,6 +36,10 @@ const commands = {
     description: 'Capture screenshots at all supported resolutions',
     handler: screenshotsCommand,
   },
+  'cors-proxy': {
+    description: 'Start the CORS proxy server for local development',
+    handler: startCorsProxy,
+  },
   create: {
     description:
       'Initialize a scaffolded Edge App (replaces template placeholders)',
@@ -45,20 +47,14 @@ const commands = {
   },
 }
 
-/**
- * Helper: Resolve a binary from the app's node_modules first, falling back to the library's
- */
-function resolveBin(name: string): string {
+function resolveBin(name) {
   const appBin = path.resolve(process.cwd(), 'node_modules', '.bin', name)
   return fs.existsSync(appBin)
     ? appBin
     : path.resolve(libraryRoot, 'node_modules', '.bin', name)
 }
 
-/**
- * Helper: Get NODE_PATH with library's node_modules included
- */
-function getNodePath(): string {
+function getNodePath() {
   const libraryNodeModules = path.resolve(libraryRoot, 'node_modules')
   const existingNodePath = process.env.NODE_PATH || ''
   return existingNodePath
@@ -66,26 +62,16 @@ function getNodePath(): string {
     : libraryNodeModules
 }
 
-/**
- * Helper: Setup signal handlers for spawned processes
- */
-function setupSignalHandlers(child: ChildProcess): void {
-  const handleSignal = (signal: string) => {
-    child.kill(signal as NodeJS.Signals)
+function setupSignalHandlers(child) {
+  const handleSignal = (signal) => {
+    child.kill(signal)
     child.on('exit', () => process.exit(0))
   }
   process.on('SIGINT', () => handleSignal('SIGINT'))
   process.on('SIGTERM', () => handleSignal('SIGTERM'))
 }
 
-/**
- * Helper: Spawn a process with common options and signal handling
- */
-function spawnWithSignalHandling(
-  command: string,
-  args: string[],
-  errorMessage: string,
-): void {
+function spawnWithSignalHandling(command, args, errorMessage) {
   const child = spawn(command, args, {
     stdio: 'inherit',
     cwd: process.cwd(),
@@ -104,17 +90,14 @@ function spawnWithSignalHandling(
   setupSignalHandlers(child)
 }
 
-/**
- * Helper: Get Vite binary and config paths
- */
-function getVitePaths(): { viteBin: string; configPath: string } {
+function getVitePaths() {
   return {
     viteBin: resolveBin('vite'),
     configPath: path.resolve(libraryRoot, 'vite.config.ts'),
   }
 }
 
-async function lintCommand(args: string[]) {
+async function lintCommand(args) {
   try {
     const eslintBin = resolveBin('eslint')
 
@@ -137,7 +120,7 @@ async function lintCommand(args: string[]) {
   }
 }
 
-async function devCommand(args: string[]) {
+async function devCommand(args) {
   try {
     const { viteBin, configPath } = getVitePaths()
     const viteArgs = ['--config', configPath, ...args]
@@ -148,7 +131,7 @@ async function devCommand(args: string[]) {
   }
 }
 
-async function buildCommand(args: string[]) {
+async function buildCommand(args) {
   try {
     const { viteBin, configPath } = getVitePaths()
     const sourcemaps = args.includes('--sourcemaps')
@@ -174,7 +157,7 @@ async function buildCommand(args: string[]) {
   }
 }
 
-async function buildDevCommand(args: string[]) {
+async function buildDevCommand(args) {
   try {
     const { viteBin, configPath } = getVitePaths()
     const viteArgs = [
@@ -192,7 +175,7 @@ async function buildDevCommand(args: string[]) {
   }
 }
 
-async function typeCheckCommand(args: string[]) {
+async function typeCheckCommand(args) {
   try {
     const tscBin = resolveBin('tsc')
 
@@ -212,7 +195,7 @@ async function typeCheckCommand(args: string[]) {
   }
 }
 
-async function convertPngsToWebP(screenshotsDir: string): Promise<void> {
+async function convertPngsToWebP(screenshotsDir) {
   const { default: sharp } = await import('sharp')
   const pngFiles = fs
     .readdirSync(screenshotsDir)
@@ -226,7 +209,7 @@ async function convertPngsToWebP(screenshotsDir: string): Promise<void> {
   }
 }
 
-async function screenshotsCommand(_args: string[]) {
+async function screenshotsCommand(_args) {
   try {
     const playwrightBin = resolveBin('playwright')
     const playwrightConfig = path.resolve(
@@ -280,7 +263,7 @@ export async function run() {
     process.exit(1)
   }
 
-  const handler = commands[cmd as keyof typeof commands].handler
+  const handler = commands[cmd].handler
   await handler(cmdArgs)
 }
 

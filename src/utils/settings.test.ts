@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   getSettings,
   getSetting,
@@ -192,7 +192,7 @@ describe('settings utilities', () => {
 
   describe('signalReady', () => {
     test('should call signalReadyForRendering', () => {
-      const mockFn = mock(() => {})
+      const mockFn = vi.fn(() => {})
       screenly.signalReadyForRendering = mockFn
 
       signalReady()

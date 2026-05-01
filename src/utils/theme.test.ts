@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   getPrimaryColor,
   getSecondaryColor,
@@ -178,7 +178,7 @@ describe('theme utilities', () => {
           screenly_logo_dark: '',
         },
       )
-      globalThis.fetch = mock(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.reject(new Error('Network error')),
       ) as typeof globalThis.fetch
       const result = await setupBrandingLogo()

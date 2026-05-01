@@ -2,17 +2,7 @@ import http from 'http'
 import https from 'https'
 import { URL } from 'url'
 
-// Listen on a specific host via the HOST environment variable
-const host = process.env.HOST || '0.0.0.0'
-// Listen on a specific port via the PORT environment variable
-const port = process.env.PORT || 8080
-
-// This script is for development purposes only and should never be deployed to production.
-// Disabling TLS certificate validation is a critical security risk.
-// Only use this in local development environments.
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
-function setCorsHeaders(res: http.ServerResponse) {
+function setCorsHeaders(res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader(
     'Access-Control-Allow-Methods',
@@ -22,12 +12,7 @@ function setCorsHeaders(res: http.ServerResponse) {
   res.setHeader('Access-Control-Max-Age', '86400')
 }
 
-function makeProxyRequest(
-  httpModule: typeof http | typeof https,
-  parsedUrl: URL,
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-) {
+function makeProxyRequest(httpModule, parsedUrl, req, res) {
   const options = {
     hostname: parsedUrl.hostname,
     port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
@@ -98,10 +83,7 @@ function makeProxyRequest(
   }
 }
 
-function handleProxyRequest(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-) {
+function handleProxyRequest(req, res) {
   setCorsHeaders(res)
 
   if (req.method === 'OPTIONS') {
@@ -142,13 +124,19 @@ function handleProxyRequest(
   }
 }
 
-const server = http.createServer((req, res) => {
-  handleProxyRequest(req, res)
-})
+export function start() {
+  const host = process.env.HOST || '0.0.0.0'
+  const port = process.env.PORT || 8080
 
-// Start the server
-server.listen(port, host, () => {
-  console.log(
-    `Running CORS Proxy (Node.js built-ins) on http://${host}:${port}`,
-  )
-})
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
+  const server = http.createServer((req, res) => {
+    handleProxyRequest(req, res)
+  })
+
+  server.listen(port, host, () => {
+    console.log(
+      `Running CORS Proxy (Node.js built-ins) on http://${host}:${port}`,
+    )
+  })
+}

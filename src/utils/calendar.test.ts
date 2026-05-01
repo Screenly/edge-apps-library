@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getDateRangeForViewMode } from './calendar'
 import { CALENDAR_VIEW_MODE } from '../types/index'
 
@@ -12,7 +12,7 @@ describe('getDateRangeForViewMode', () => {
 
   beforeEach(() => {
     originalNow = Date.now
-    Date.now = mock(() => FIXED_DATE.getTime())
+    Date.now = vi.fn(() => FIXED_DATE.getTime())
   })
 
   afterEach(() => {

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { getDefaultUTMParams, addUTMParams, addUTMParamsIf } from './utm'
 import { setupScreenlyMock, resetScreenlyMock } from '../test/mock'
 

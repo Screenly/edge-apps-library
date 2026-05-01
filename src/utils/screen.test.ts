@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   isPortrait,
   isLandscape,
@@ -92,7 +92,7 @@ describe('centerAutoScalerVertically', () => {
   })
 
   test('should do nothing when auto-scaler element is not found', () => {
-    document.querySelector = mock(() => null)
+    document.querySelector = vi.fn(() => null)
     // Should not throw
     expect(() => centerAutoScalerVertically()).not.toThrow()
   })
@@ -108,7 +108,7 @@ describe('centerAutoScalerVertically', () => {
       style: { top: '' },
     } as unknown as HTMLElement
 
-    document.querySelector = mock(() => mockScaler)
+    document.querySelector = vi.fn(() => mockScaler)
 
     centerAutoScalerVertically()
 
@@ -124,7 +124,7 @@ describe('centerAutoScalerVertically', () => {
       style: { top: '' },
     } as unknown as HTMLElement
 
-    document.querySelector = mock(() => mockScaler)
+    document.querySelector = vi.fn(() => mockScaler)
 
     centerAutoScalerVertically()
 

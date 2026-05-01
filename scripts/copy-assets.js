@@ -1,7 +1,4 @@
-#!/usr/bin/env bun
-/**
- * Copy assets from src to dist after TypeScript compilation
- */
+#!/usr/bin/env node
 
 import { cpSync, existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
@@ -15,10 +12,7 @@ const srcAssets = `${libraryRoot}/src/assets`
 const distAssets = `${libraryRoot}/dist/assets`
 
 if (existsSync(srcAssets)) {
-  // Ensure dist directory exists
   mkdirSync(dirname(distAssets), { recursive: true })
-
-  // Copy assets
   cpSync(srcAssets, distAssets, { recursive: true })
   console.log('✓ Copied assets to dist/')
 } else {
