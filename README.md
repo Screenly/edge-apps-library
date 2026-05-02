@@ -6,8 +6,14 @@ A TypeScript library for interfacing with the Screenly Edge Apps API.
 
 ## Installation
 
-> [!IMPORTANT]
-> This package requires [Bun](https://bun.sh). The `edge-apps-scripts` CLI will not work with `npm` or `node` at this time.
+> [!NOTE]
+> Requires Node.js >= 20.6.0.
+
+```bash
+npm install @screenly/edge-apps
+```
+
+Or with Bun:
 
 ```bash
 bun add @screenly/edge-apps
@@ -20,26 +26,22 @@ When developing Edge Apps locally using the library from this repository, you sh
 First, in the root of this repository:
 
 ```bash
-bun link
+npm install
+npm run build
+npm link
 ```
 
 Then in your Edge App directory:
 
 ```bash
 cd /path/to/your-edge-app
-bun link @screenly/edge-apps
+npm link @screenly/edge-apps
 ```
 
 To unlink the package when you're done with local development, run the following in your Edge App directory:
 
 ```bash
-bun install --force
-```
-
-Then in the root of this repository:
-
-```bash
-bun unlink
+npm install
 ```
 
 ## Quick Start
@@ -97,7 +99,7 @@ signalReady()
 
 ## Web Components
 
-This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/master/docs/components.md) for usage details.
+This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/main/docs/components.md) for usage details.
 
 ## Edge Apps Scripts CLI
 
@@ -110,13 +112,13 @@ This package provides the `edge-apps-scripts` CLI tool for running shared develo
 Start the Vite development server with mock data from `screenly.yml` and `mock-data.yml`:
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 #### Building
 
 ```bash
-bun run build
+npm run build
 ```
 
 #### Linting
@@ -124,13 +126,13 @@ bun run build
 To lint your Edge App:
 
 ```bash
-bun run lint
+npm run lint
 ```
 
 To lint and automatically fix issues:
 
 ```bash
-bun run lint -- --fix
+npm run lint -- --fix
 ```
 
 #### Type Checking
@@ -138,7 +140,7 @@ bun run lint -- --fix
 Run TypeScript type checking:
 
 ```bash
-bun run type-check
+npm run type-check
 ```
 
 ### Command-Line Utilities for Edge Apps
@@ -158,7 +160,7 @@ It is recommended to add the following scripts to your Edge App's `package.json`
     "build:dev": "edge-apps-scripts build:dev",
     "lint": "edge-apps-scripts lint",
     "type-check": "edge-apps-scripts type-check",
-    "deploy": "bun run build && screenly edge-app deploy --path=dist/"
+    "deploy": "npm run build && screenly edge-app deploy --path=dist/"
   }
 }
 ```
@@ -197,7 +199,7 @@ import type {
 ## Development
 
 ```bash
-bun install      # Install dependencies
-bun test         # Run tests
-bun run build    # Build library
+npm install      # Install dependencies
+npm test         # Run tests
+npm run build    # Build library
 ```
