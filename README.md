@@ -6,6 +6,9 @@ A TypeScript library for interfacing with the Screenly Edge Apps API.
 
 ## Installation
 
+> [!NOTE]
+> Requires Node.js >= 20.6.0.
+
 ```bash
 npm install @screenly/edge-apps
 ```
@@ -23,6 +26,8 @@ When developing Edge Apps locally using the library from this repository, you sh
 First, in the root of this repository:
 
 ```bash
+npm install
+npm run build
 npm link
 ```
 
@@ -36,13 +41,7 @@ npm link @screenly/edge-apps
 To unlink the package when you're done with local development, run the following in your Edge App directory:
 
 ```bash
-npm unlink @screenly/edge-apps
-```
-
-Then in the root of this repository:
-
-```bash
-npm unlink
+npm install
 ```
 
 ## Quick Start
