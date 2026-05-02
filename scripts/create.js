@@ -21,15 +21,15 @@ const TEXT_EXTENSIONS = new Set([
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git'])
 
-function toTitleCase(kebab: string): string {
+function toTitleCase(kebab) {
   return kebab
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 }
 
-function walkTextFiles(dir: string): string[] {
-  const results: string[] = []
+function walkTextFiles(dir) {
+  const results = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name)
     if (entry.isDirectory()) {
@@ -45,10 +45,7 @@ function walkTextFiles(dir: string): string[] {
   return results
 }
 
-function replaceInFile(
-  filePath: string,
-  replacements: Record<string, string>,
-): void {
+function replaceInFile(filePath, replacements) {
   const original = fs.readFileSync(filePath, 'utf-8')
   const updated = Object.entries(replacements).reduce(
     (src, [placeholder, value]) => src.replaceAll(placeholder, value),
@@ -57,11 +54,11 @@ function replaceInFile(
   if (updated !== original) fs.writeFileSync(filePath, updated, 'utf-8')
 }
 
-export async function createCommand(_args: string[]) {
+export async function createCommand(_args) {
   const projectRoot = process.cwd()
   const pkgPath = path.join(projectRoot, 'package.json')
 
-  let pkg: Record<string, unknown>
+  let pkg
   try {
     pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
   } catch (error) {
@@ -84,7 +81,7 @@ export async function createCommand(_args: string[]) {
   const appTitle = toTitleCase(appName)
   const appDescription = `${appTitle} - Screenly Edge App`
 
-  const replacements: Record<string, string> = {
+  const replacements = {
     '{{APP_NAME}}': appName,
     '{{APP_TITLE}}': appTitle,
     '{{APP_DESCRIPTION}}': appDescription,
@@ -107,12 +104,12 @@ Next steps:
   1. Add an id field to screenly.yml and screenly_qc.yml.
 
   2. Install dependencies:
-       bun install
+       npm install
 
   3. Start the dev server:
-       bun run dev
+       npm run dev
 
   4. Deploy when ready:
-       bun run deploy
+       npm run deploy
 `)
 }

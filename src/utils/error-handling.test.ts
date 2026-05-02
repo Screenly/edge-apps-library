@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach, spyOn } from 'bun:test'
+import { describe, test, expect, afterEach, vi } from 'vitest'
 import { setupErrorHandling } from './error-handling'
 import { setupScreenlyMock, resetScreenlyMock } from '../test'
 
@@ -24,7 +24,7 @@ describe('error-handling utilities', () => {
 
     test('should add event listeners when display_errors is enabled', () => {
       setupScreenlyMock({}, { display_errors: 'true' })
-      const addEventListenerSpy = spyOn(window, 'addEventListener')
+      const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
 
       setupErrorHandling()
 
@@ -34,7 +34,7 @@ describe('error-handling utilities', () => {
 
     test('should not add event listeners when display_errors is disabled', () => {
       setupScreenlyMock({}, { display_errors: 'false' })
-      const addEventListenerSpy = spyOn(window, 'addEventListener')
+      const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
 
       setupErrorHandling()
 
