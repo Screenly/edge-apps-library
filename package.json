@@ -79,6 +79,10 @@
   ],
   "author": "Screenly",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Screenly/edge-apps-library"
+  },
   "publishConfig": {
     "access": "public"
   },
