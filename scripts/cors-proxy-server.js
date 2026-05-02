@@ -41,6 +41,7 @@ function handleRedirect(
     proxyRes.resume()
     makeProxyRequest(redirectModule, redirectUrl, req, res, redirectCount + 1)
   } catch {
+    proxyRes.resume()
     res.writeHead(502, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Invalid redirect location' }))
   }
