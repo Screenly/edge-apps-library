@@ -42,6 +42,14 @@ describe('sentry utilities', () => {
 
       expect(scrubSensitiveData(event)).toBe(event)
     })
+
+    test('when event cannot be serialized, should drop it rather than leak', () => {
+      setupScreenlyMock({}, { screenly_app_auth_token: 'secret-auth' })
+      const event = { message: 'boom' } as Record<string, unknown>
+      event.self = event
+
+      expect(scrubSensitiveData(event as SentryEvent)).toBeNull()
+    })
   })
 
   describe('setupSentry', () => {

@@ -10,7 +10,7 @@ function isSensitiveKey(key: string): boolean {
   return SENSITIVE_KEY_PATTERNS.some((pattern) => lowerKey.includes(pattern))
 }
 
-export function scrubSensitiveData(event: ErrorEvent): ErrorEvent {
+export function scrubSensitiveData(event: ErrorEvent): ErrorEvent | null {
   const settings = getSettings()
   const secrets = Object.keys(settings)
     .filter(isSensitiveKey)
@@ -23,11 +23,17 @@ export function scrubSensitiveData(event: ErrorEvent): ErrorEvent {
     return event
   }
 
-  let serialized = JSON.stringify(event)
-  for (const secret of secrets) {
-    serialized = serialized.split(secret).join('[REDACTED]')
+  try {
+    let serialized = JSON.stringify(event)
+    for (const secret of secrets) {
+      serialized = serialized.split(secret).join('[REDACTED]')
+    }
+    return JSON.parse(serialized) as ErrorEvent
+  } catch {
+    // If the event can't be serialized to scrub it, drop it rather than risk
+    // sending an unredacted secret.
+    return null
   }
-  return JSON.parse(serialized) as ErrorEvent
 }
 
 export function setupSentry(
