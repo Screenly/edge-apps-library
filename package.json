@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
+  "sideEffects": ["**/*.css", "**/register.js", "**/buffer-shim.js"],
   "engines": {
     "node": ">=20.6.0"
   },
@@ -87,20 +88,21 @@
     "access": "public"
   },
   "dependencies": {
+    "@eslint/js": "^10.0.1",
     "@photostructure/tz-lookup": "^11.5.0",
+    "@sentry/browser": "^10.59.0",
     "@tailwindcss/vite": "^4.2.1",
     "country-locale-map": "^1.9.12",
     "dayjs": "^1.11.19",
-    "@eslint/js": "^10.0.1",
     "eslint": "^10.0.3",
     "jiti": "^2.6.1",
     "jsdom": "^28.1.0",
     "offline-geocode-city": "^1.0.2",
-    "typescript-eslint": "^8.57.0",
     "panic-overlay": "^1.0.51",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.0",
     "vite": "^7.3.1",
     "yaml": "^2.8.2"
   },
