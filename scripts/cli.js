@@ -16,6 +16,11 @@ const commands = {
     description: 'Run ESLint with shared configuration',
     handler: lintCommand,
   },
+  format: {
+    description:
+      'Format source files with Prettier (use --check to verify without writing)',
+    handler: formatCommand,
+  },
   dev: {
     description: 'Start Vite development server',
     handler: devCommand,
@@ -94,6 +99,42 @@ function getVitePaths() {
   return {
     viteBin: resolveBin('vite'),
     configPath: path.resolve(libraryRoot, 'vite.config.ts'),
+  }
+}
+
+async function formatCommand(args) {
+  try {
+    const prettierBin = resolveBin('prettier')
+    const isCheckMode = args.includes('--check')
+    const paths = args.filter((arg) => !arg.startsWith('-'))
+    const extraFlags = args.filter(
+      (arg) => arg.startsWith('-') && arg !== '--check',
+    )
+
+    const targets = paths.length > 0 ? paths : ['.']
+
+    const projectPrettierrc = path.resolve(process.cwd(), '.prettierrc.json')
+    const configPath = fs.existsSync(projectPrettierrc)
+      ? projectPrettierrc
+      : path.resolve(libraryRoot, '.prettierrc.json')
+
+    const prettierArgs = [
+      '--config',
+      configPath,
+      isCheckMode ? '--check' : '--write',
+      ...targets,
+      ...extraFlags,
+    ]
+
+    execSync(
+      `"${prettierBin}" ${prettierArgs.map((arg) => `"${arg}"`).join(' ')}`,
+      {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+      },
+    )
+  } catch {
+    process.exit(1)
   }
 }
 

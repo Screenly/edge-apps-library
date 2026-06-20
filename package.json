@@ -1,6 +1,6 @@
 {
   "name": "@screenly/edge-apps",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
   "sideEffects": ["**/*.css", "**/register.js", "**/buffer-shim.js"],
@@ -55,6 +55,7 @@
     "eslint.config.ts",
     "tsconfig.json",
     "vite.config.ts",
+    ".prettierrc.json",
     "src/styles",
     "src/assets"
   ],
@@ -98,6 +99,7 @@
     "jiti": "^2.6.1",
     "jsdom": "^28.1.0",
     "offline-geocode-city": "^1.0.2",
+    "prettier": "^3.8.1",
     "panic-overlay": "^1.0.51",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",
@@ -120,7 +122,6 @@
     "@types/sharp": "^0.32.0",
     "@vitest/coverage-v8": "^3.2.4",
     "globals": "^13.24.0",
-    "prettier": "^3.8.1",
     "vitest": "^3.2.4"
   }
 }
