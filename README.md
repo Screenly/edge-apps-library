@@ -97,6 +97,12 @@ signalReady()
 - `addUTMParams(url, params?)` - Add UTM parameters to URL
 - `addUTMParamsIf(url, enabled, params?)` - Conditionally add UTM parameters
 
+### Error Reporting (Sentry)
+
+- `setupSentry(app, contexts?)` - Initialize Sentry using the `sentry_dsn` setting; sets the `edge_app` tag, hostname, and any additional contexts. No-ops if `sentry_dsn` is not configured.
+- `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
+- `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
+
 ## Web Components
 
 This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/main/docs/components.md) for usage details.
