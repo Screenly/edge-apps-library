@@ -126,13 +126,10 @@ async function formatCommand(args) {
       ...extraFlags,
     ]
 
-    execSync(
-      `"${prettierBin}" ${prettierArgs.map((arg) => `"${arg}"`).join(' ')}`,
-      {
-        stdio: 'inherit',
-        cwd: process.cwd(),
-      },
-    )
+    execFileSync(prettierBin, prettierArgs, {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+    })
   } catch {
     process.exit(1)
   }
