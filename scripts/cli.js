@@ -107,10 +107,6 @@ async function formatCommand(args) {
     const prettierBin = resolveBin('prettier')
     const isCheckMode = args.includes('--check')
     const paths = args.filter((arg) => !arg.startsWith('-'))
-    const extraFlags = args.filter(
-      (arg) => arg.startsWith('-') && arg !== '--check',
-    )
-
     const targets = paths.length > 0 ? paths : ['.']
 
     const projectPrettierrc = path.resolve(process.cwd(), '.prettierrc.json')
@@ -123,7 +119,6 @@ async function formatCommand(args) {
       configPath,
       isCheckMode ? '--check' : '--write',
       ...targets,
-      ...extraFlags,
     ]
 
     execFileSync(prettierBin, prettierArgs, {
