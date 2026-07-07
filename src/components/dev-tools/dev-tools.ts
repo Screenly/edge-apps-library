@@ -137,8 +137,9 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   }
 
   private isDevelopmentMode(): boolean {
+    const meta = import.meta as { env?: { DEV?: boolean } }
     return (
-      import.meta.env.DEV ||
+      meta.env?.DEV ||
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
       window.location.search.includes('dev=true')
