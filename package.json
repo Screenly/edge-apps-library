@@ -101,12 +101,12 @@
     "dayjs": "^1.11.19",
     "eslint": "^10.0.3",
     "jiti": "^2.6.1",
-    "jsdom": "^28.1.0",
+    "jsdom": "^29.1.1",
     "offline-geocode-city": "^1.0.2",
     "panic-overlay": "^1.0.51",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^8.1.2",
     "yaml": "^2.8.2"
@@ -121,10 +121,10 @@
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.0",
-    "@types/node": "^25.4.0",
+    "@types/node": "^26.1.1",
     "@types/sharp": "^0.32.0",
     "@vitest/coverage-v8": "^4.1.9",
-    "globals": "^13.24.0",
+    "globals": "^17.7.0",
     "prettier": "^3.8.1",
     "vitest": "^4.1.9"
   }
