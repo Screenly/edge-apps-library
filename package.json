@@ -1,9 +1,14 @@
 {
   "name": "@screenly/edge-apps",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A TypeScript library for interfacing with Screenly Edge Apps API",
   "type": "module",
-  "sideEffects": ["**/*.css", "**/register.js", "**/buffer-shim.js"],
+  "sideEffects": [
+    "**/*.css",
+    "**/register.js",
+    "**/buffer-shim.js",
+    "**/components/**"
+  ],
   "engines": {
     "node": ">=20.6.0"
   },
