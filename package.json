@@ -127,5 +127,10 @@
     "globals": "^13.24.0",
     "prettier": "^3.8.1",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "@jsheaven/easybuild": {
+      "esbuild": "0.25.12"
+    }
   }
 }
