@@ -33,7 +33,7 @@ export function parseCreateArgs(args) {
     const arg = args[i]
     if (VALUE_FLAGS.has(arg)) {
       const value = args[i + 1]
-      if (value === undefined || value.startsWith('--')) {
+      if (value === undefined || value.startsWith('-')) {
         return { error: `Missing value for ${arg}` }
       }
       i++
@@ -43,7 +43,7 @@ export function parseCreateArgs(args) {
     } else if (BOOLEAN_FLAGS.has(arg)) {
       if (arg === '--force') options.force = true
       else options.skipInstall = true
-    } else if (arg.startsWith('--')) {
+    } else if (arg.startsWith('-')) {
       return { error: `Unknown option: ${arg}` }
     } else {
       positional.push(arg)
@@ -177,7 +177,7 @@ export function scaffoldNewApp(directory, options) {
   const appName = toKebabCase(path.basename(destination))
   const appTitle = toTitleCase(appName)
   const appDescription =
-    options.description || `${appTitle} - Screenly Edge App`
+    options.description ?? `${appTitle} - Screenly Edge App`
 
   console.log(`\nScaffolding a new Edge App in ${destination}`)
 
