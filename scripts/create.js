@@ -44,7 +44,7 @@ function initializeExistingProject() {
     replaceInFile(filePath, replacements)
   }
 
-  const updatedPkg = { ...pkg }
+  const updatedPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
   delete updatedPkg['bun-create']
   fs.writeFileSync(pkgPath, JSON.stringify(updatedPkg, null, 2) + '\n', 'utf-8')
 
