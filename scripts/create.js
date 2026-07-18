@@ -65,11 +65,30 @@ Next steps:
 `)
 }
 
+function hasScaffoldOnlyOptions(options) {
+  return (
+    options.description !== null ||
+    options.author !== null ||
+    options.pm !== null ||
+    options.force ||
+    options.skipInstall
+  )
+}
+
 export async function createCommand(args) {
   const { directory, options, error } = parseCreateArgs(args)
 
   if (error) {
     console.error(error)
+    process.exitCode = 1
+    return
+  }
+
+  if (!directory && hasScaffoldOnlyOptions(options)) {
+    console.error(
+      'Options like --description/--author/--pm/--force/--skip-install only apply ' +
+        'when scaffolding a new app: npx @screenly/edge-apps create <directory>',
+    )
     process.exitCode = 1
     return
   }
