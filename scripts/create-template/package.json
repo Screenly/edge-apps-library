@@ -1,7 +1,7 @@
 {
   "name": "{{APP_NAME}}",
   "version": "0.1.0",
-  "description": "{{APP_DESCRIPTION}}",
+  "description": "{{APP_DESCRIPTION_JSON}}",
   "type": "module",
   "scripts": {
     "prebuild": "{{PM_RUN}} type-check",
