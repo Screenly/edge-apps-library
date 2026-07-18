@@ -1,0 +1,19 @@
+{
+  "name": "{{APP_NAME}}",
+  "version": "0.1.0",
+  "description": "{{APP_DESCRIPTION}}",
+  "type": "module",
+  "scripts": {
+    "prebuild": "{{PM_RUN}} type-check",
+    "dev": "edge-apps-scripts dev",
+    "build": "edge-apps-scripts build",
+    "build:dev": "edge-apps-scripts build:dev",
+    "lint": "edge-apps-scripts lint",
+    "type-check": "edge-apps-scripts type-check",
+    "format": "prettier --write src/ README.md index.html",
+    "format:check": "prettier --check src/ README.md index.html",
+    "deploy": "{{PM_RUN}} build && screenly edge-app deploy --path=dist/"
+  },
+  "prettier": "./.prettierrc.json",
+  "devDependencies": {}
+}
