@@ -15,7 +15,7 @@ function initializeExistingProject() {
       `Failed to read or parse package.json at ${pkgPath}. ` +
         'Make sure you are running this command from an Edge App project root, ' +
         'or pass a directory name to scaffold a new Edge App: ' +
-        'edge-apps-scripts create <directory>',
+        'npx @screenly/edge-apps create <directory> (or bunx @screenly/edge-apps create <directory>)',
     )
     if (error instanceof Error && error.message) {
       console.error(`Details: ${error.message}`)
