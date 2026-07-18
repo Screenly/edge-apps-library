@@ -119,13 +119,14 @@ function installDependencies(destination, pm) {
   }
 }
 
-function printScaffoldNextSteps(destination, appName, pm, skipInstall) {
+function printScaffoldNextSteps(destination, appName, pm) {
   const relativePath = path.relative(process.cwd(), destination) || '.'
   const runCommand = pm === 'bun' ? 'bun run' : 'npm run'
   const installCommand = pm === 'bun' ? 'bun install' : 'npm install'
+  const needsInstall = !fs.existsSync(path.join(destination, 'node_modules'))
 
   const steps = [`cd "${relativePath}"`]
-  if (skipInstall) steps.push(installCommand)
+  if (needsInstall) steps.push(installCommand)
   steps.push(
     `Add an id to screenly.yml and screenly_qc.yml:\n       screenly edge-app create --name ${appName} --in-place`,
     `Start the dev server:\n       ${runCommand} dev`,
@@ -218,5 +219,5 @@ export function scaffoldNewApp(directory, options) {
     installDependencies(destination, pm)
   }
 
-  printScaffoldNextSteps(destination, appName, pm, options.skipInstall)
+  printScaffoldNextSteps(destination, appName, pm)
 }
