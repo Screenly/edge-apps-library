@@ -32,6 +32,6 @@ screenly edge-app instance create
 
 ## Configuration
 
-| Setting   | Description                     | Type     | Default            |
+| Setting   | Description                     | Required | Default            |
 | --------- | ------------------------------- | -------- | ------------------ |
-| `message` | The message displayed on screen | optional | `Hello, Screenly!` |
+| `message` | The message displayed on screen | No       | `Hello, Screenly!` |

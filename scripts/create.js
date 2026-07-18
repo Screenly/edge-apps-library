@@ -73,6 +73,8 @@ function replaceInFile(filePath, replacements) {
   if (updated !== original) fs.writeFileSync(filePath, updated, 'utf-8')
 }
 
+const VALUE_FLAGS = new Set(['--pm', '--description', '--author'])
+
 function parseCreateArgs(args) {
   const options = {
     pm: null,
@@ -85,12 +87,15 @@ function parseCreateArgs(args) {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
-    if (arg === '--pm') {
-      options.pm = args[++i]
-    } else if (arg === '--description') {
-      options.description = args[++i]
-    } else if (arg === '--author') {
-      options.author = args[++i]
+    if (VALUE_FLAGS.has(arg)) {
+      const value = args[i + 1]
+      if (value === undefined || value.startsWith('--')) {
+        return { error: `Missing value for ${arg}` }
+      }
+      i++
+      if (arg === '--pm') options.pm = value
+      else if (arg === '--description') options.description = value
+      else options.author = value
     } else if (arg === '--force') {
       options.force = true
     } else if (arg === '--skip-install') {
@@ -161,7 +166,7 @@ function printScaffoldNextSteps(destination, appName, pm, skipInstall) {
   const runCommand = pm === 'bun' ? 'bun run' : 'npm run'
   const installCommand = pm === 'bun' ? 'bun install' : 'npm install'
 
-  const steps = [`cd ${relativePath}`]
+  const steps = [`cd "${relativePath}"`]
   if (skipInstall) steps.push(installCommand)
   steps.push(
     `Add an id to screenly.yml and screenly_qc.yml:\n       screenly edge-app create --name ${appName} --in-place`,
@@ -187,6 +192,11 @@ function scaffoldNewApp(directory, options) {
   const destination = path.resolve(process.cwd(), directory)
 
   if (fs.existsSync(destination)) {
+    if (!fs.statSync(destination).isDirectory()) {
+      console.error(`"${directory}" already exists and is not a directory.`)
+      process.exitCode = 1
+      return
+    }
     const isEmpty = fs.readdirSync(destination).length === 0
     if (!isEmpty && !options.force) {
       console.error(
@@ -207,10 +217,11 @@ function scaffoldNewApp(directory, options) {
   console.log(`\nScaffolding a new Edge App in ${destination}`)
 
   fs.cpSync(templateRoot, destination, { recursive: true })
-  fs.renameSync(
+  fs.copyFileSync(
     path.join(destination, '_gitignore'),
     path.join(destination, '.gitignore'),
   )
+  fs.rmSync(path.join(destination, '_gitignore'))
 
   const replacements = {
     '{{APP_NAME}}': appName,
@@ -306,7 +317,13 @@ Next steps:
 }
 
 export async function createCommand(args) {
-  const { directory, options } = parseCreateArgs(args)
+  const { directory, options, error } = parseCreateArgs(args)
+
+  if (error) {
+    console.error(error)
+    process.exitCode = 1
+    return
+  }
 
   if (directory) {
     scaffoldNewApp(directory, options)
