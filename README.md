@@ -45,19 +45,22 @@ Pass options after the directory name, for example:
 npx @screenly/edge-apps create my-edge-app --description "My Edge App" --author "Jane Doe"
 ```
 
-| Option                 | Description                                           |
-| ---------------------- | ----------------------------------------------------- |
-| `--description <text>` | Description used in `package.json` and `screenly.yml` |
-| `--author <text>`      | Author name added to `package.json`                   |
-| `--pm <npm\|bun>`      | Force a package manager instead of auto-detecting it  |
-| `--force`              | Write into an existing, non-empty directory           |
-| `--skip-install`       | Skip installing dependencies after scaffolding        |
+| Option                 | Description                                                         |
+| ---------------------- | ------------------------------------------------------------------- |
+| `--description <text>` | Description used in `package.json`, `screenly.yml`, and `README.md` |
+| `--author <text>`      | Author name added to `package.json`                                 |
+| `--pm <npm\|bun>`      | Force a package manager instead of auto-detecting it                |
+| `--force`              | Write into an existing, non-empty directory                         |
+| `--skip-install`       | Skip installing dependencies after scaffolding                      |
 
 > [!NOTE]
 > Running `edge-apps-scripts create` with no directory argument instead
 > replaces `{{APP_NAME}}`-style placeholders in the current project — this is
 > used by Edge App template repositories after cloning, and is unrelated to
 > scaffolding a brand new app.
+
+No test files are included — `test`/`test:unit` work out of the box on an
+empty suite; add your own under `src/` when you have something to test.
 
 ### Local Development Setup
 

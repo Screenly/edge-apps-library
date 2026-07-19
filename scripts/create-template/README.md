@@ -35,3 +35,9 @@ screenly edge-app instance create
 | Setting   | Description                     | Required | Default            |
 | --------- | ------------------------------- | -------- | ------------------ |
 | `message` | The message displayed on screen | No       | `Hello, Screenly!` |
+
+## Screenshots
+
+```bash
+{{PM_RUN}} screenshots
+```

@@ -1,6 +1,5 @@
 ---
 syntax: manifest_v1
-id: ''
 description: '{{APP_DESCRIPTION_YAML}}'
 ready_signal: true
 settings:

@@ -16,6 +16,10 @@ const libraryPkg = JSON.parse(
   fs.readFileSync(path.join(libraryRoot, 'package.json'), 'utf-8'),
 )
 
+const NPM_RUN_ALL2_VERSION = '^8.0.4'
+const TYPES_BUN_VERSION = '^1.3.13'
+const BUN_TYPES_VERSION = '^1.3.13'
+
 const VALUE_FLAGS = new Set(['--pm', '--description', '--author'])
 const BOOLEAN_FLAGS = new Set(['--force', '--skip-install'])
 
@@ -91,10 +95,17 @@ function finalizePackageJson(destination, pm) {
     typescript: libraryPkg.dependencies.typescript,
     prettier: libraryPkg.devDependencies.prettier,
     '@types/node': libraryPkg.devDependencies['@types/node'],
+    'npm-run-all2': NPM_RUN_ALL2_VERSION,
+    '@playwright/test': libraryPkg.peerDependencies['@playwright/test'],
   }
 
   if (pm === 'bun') {
     pkg.scripts.test = 'bun test --pass-with-no-tests src/'
+    pkg.devDependencies['@types/bun'] = TYPES_BUN_VERSION
+    pkg.devDependencies['bun-types'] = BUN_TYPES_VERSION
+    pkg.devDependencies.jsdom = libraryPkg.dependencies.jsdom
+    pkg.devDependencies['@types/jsdom'] =
+      libraryPkg.devDependencies['@types/jsdom']
   } else {
     pkg.scripts.test = 'vitest run --passWithNoTests'
     pkg.devDependencies.vitest = libraryPkg.devDependencies.vitest
@@ -128,7 +139,7 @@ function printScaffoldNextSteps(destination, appName, pm) {
   const steps = [`cd "${relativePath}"`]
   if (needsInstall) steps.push(installCommand)
   steps.push(
-    `Add an id to screenly.yml and screenly_qc.yml:\n       screenly edge-app create --name ${appName} --in-place`,
+    `Register the app to get an id for screenly.yml:\n       screenly edge-app create --name ${appName} --in-place`,
     `Start the dev server:\n       ${runCommand} dev`,
     `Deploy when ready:\n       ${runCommand} deploy`,
   )

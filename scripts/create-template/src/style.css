@@ -24,3 +24,7 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+#message {
+  color: var(--theme-color-primary, #972eff);
+}
