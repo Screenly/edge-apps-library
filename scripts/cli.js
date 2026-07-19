@@ -42,7 +42,7 @@ const commands = {
   },
   create: {
     description:
-      'Initialize a scaffolded Edge App (replaces template placeholders)',
+      'Scaffold a new Edge App (or replace template placeholders in the current project)',
     handler: createCommand,
   },
 }

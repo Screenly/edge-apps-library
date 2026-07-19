@@ -19,6 +19,49 @@ Or with Bun:
 bun add @screenly/edge-apps
 ```
 
+## Creating a New Edge App
+
+Scaffold a new Edge App without installing anything first:
+
+```bash
+npx @screenly/edge-apps create my-edge-app
+```
+
+Or with Bun:
+
+```bash
+bunx @screenly/edge-apps create my-edge-app
+```
+
+The package manager used to invoke the command is detected automatically, so
+the generated `package.json` scripts are wired up to match (`npm run ...` vs.
+`bun run ...`). This generates a minimal Edge App with a `screenly.yml`
+manifest, `index.html`, and a `src/main.ts` entry point wired up to this
+library.
+
+Pass options after the directory name, for example:
+
+```bash
+npx @screenly/edge-apps create my-edge-app --description "My Edge App" --author "Jane Doe"
+```
+
+| Option                 | Description                                                         |
+| ---------------------- | ------------------------------------------------------------------- |
+| `--description <text>` | Description used in `package.json`, `screenly.yml`, and `README.md` |
+| `--author <text>`      | Author name added to `package.json`                                 |
+| `--pm <npm\|bun>`      | Force a package manager instead of auto-detecting it                |
+| `--force`              | Write into an existing, non-empty directory                         |
+| `--skip-install`       | Skip installing dependencies after scaffolding                      |
+
+> [!NOTE]
+> Running `edge-apps-scripts create` with no directory argument instead
+> replaces `{{APP_NAME}}`-style placeholders in the current project — this is
+> used by Edge App template repositories after cloning, and is unrelated to
+> scaffolding a brand new app.
+
+No test files are included — `test`/`test:unit` work out of the box on an
+empty suite; add your own under `src/` when you have something to test.
+
 ### Local Development Setup
 
 When developing Edge Apps locally using the library from this repository, you should link the package.
