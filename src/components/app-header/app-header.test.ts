@@ -3,13 +3,31 @@ import { setupScreenlyMock, resetScreenlyMock } from '../../test/mock.js'
 import './app-header.js'
 import '../brand-logo/brand-logo.js'
 
-function flushMicrotasks() {
-  return new Promise((resolve) => setTimeout(resolve, 50))
+async function waitFor<T>(
+  fn: () => T | null | undefined,
+  {
+    timeout = 1000,
+    interval = 5,
+  }: { timeout?: number; interval?: number } = {},
+): Promise<T> {
+  const start = Date.now()
+  while (Date.now() - start < timeout) {
+    const result = fn()
+    if (result) return result
+    await new Promise((resolve) => setTimeout(resolve, interval))
+  }
+  throw new Error('waitFor: timed out waiting for condition')
 }
 
 describe('AppHeader', () => {
   beforeEach(() => {
-    setupScreenlyMock({ screen_name: 'Test Screen' })
+    // override_locale/override_timezone let getLocale()/getTimeZone() resolve
+    // synchronously without falling back to GPS lookup or the dynamic import
+    // of offline-geocode-city, keeping initialization deterministic.
+    setupScreenlyMock(
+      { screen_name: 'Test Screen' },
+      { override_locale: 'en', override_timezone: 'UTC' },
+    )
   })
 
   afterEach(() => {
@@ -20,15 +38,16 @@ describe('AppHeader', () => {
   test('does not render the screen name', async () => {
     const header = document.createElement('app-header')
     document.body.appendChild(header)
-    await flushMicrotasks()
 
-    const brandLogo = header.shadowRoot!.querySelector('brand-logo')
-    expect(brandLogo).not.toBeNull()
-    expect(brandLogo!.hasAttribute('show-name')).toBe(false)
+    const brandLogo = await waitFor(() =>
+      header.shadowRoot!.querySelector('brand-logo'),
+    )
+    expect(brandLogo.hasAttribute('show-name')).toBe(false)
 
-    await flushMicrotasks()
-    const nameEl = brandLogo!.shadowRoot!.querySelector('.brand-name')
-    expect(nameEl!.textContent).toBe('')
+    const nameEl = await waitFor(() =>
+      brandLogo.shadowRoot?.querySelector('.brand-name'),
+    )
+    expect(nameEl.textContent).toBe('')
     expect(header.shadowRoot!.textContent).not.toContain('Test Screen')
   })
 })
