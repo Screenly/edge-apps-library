@@ -32,11 +32,21 @@ export const initTokenRefreshLoop = (onRefresh: () => Promise<void>): void => {
 /**
  * Retrieves credentials from the Screenly OAuth service
  * @param tokenType The token endpoint type (default: 'access_token')
- * @returns An object containing the token and optional metadata from the OAuth provider
+ * @returns An object containing the token, optional metadata, an optional
+ * error message reported by the backend, and the response status. The
+ * promise still resolves (rather than rejects) for non-2xx responses, so
+ * existing callers that only destructure `token`/`metadata` keep working
+ * unchanged. Callers that need to distinguish a backend outage (5xx) from
+ * an expected error (e.g. integration not connected) can inspect `status`.
  */
 export const getCredentials = async (
   tokenType: string = 'access_token',
-): Promise<{ token: string; metadata?: Record<string, unknown> }> => {
+): Promise<{
+  token?: string
+  metadata?: Record<string, unknown>
+  error?: string
+  status: number
+}> => {
   const response = await fetch(
     screenly.settings.screenly_oauth_tokens_url + tokenType + '/',
     {
@@ -48,6 +58,6 @@ export const getCredentials = async (
     },
   )
 
-  const { token, metadata } = await response.json()
-  return { token, metadata }
+  const body = await response.json().catch(() => ({}))
+  return { ...body, status: response.status }
 }
