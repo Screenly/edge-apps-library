@@ -7,7 +7,7 @@ import {
 
 const htmlTemplate = `
 <div class="header-left">
-  <brand-logo show-name></brand-logo>
+  <brand-logo></brand-logo>
 </div>
 <div class="header-right">
   <span class="header-date"></span>
