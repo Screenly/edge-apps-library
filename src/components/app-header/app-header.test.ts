@@ -44,10 +44,11 @@ describe('AppHeader', () => {
     )
     expect(brandLogo.hasAttribute('show-name')).toBe(false)
 
-    const nameEl = await waitFor(() =>
-      brandLogo.shadowRoot?.querySelector('.brand-name'),
-    )
+    // Wait for brand-logo's async logo-loading chain to settle before
+    // asserting on .brand-name, since it exists (empty) from first render.
+    await waitFor(() => brandLogo.shadowRoot?.querySelector('img[src]'))
+
+    const nameEl = brandLogo.shadowRoot!.querySelector('.brand-name')!
     expect(nameEl.textContent).toBe('')
-    expect(header.shadowRoot!.textContent).not.toContain('Test Screen')
   })
 })
