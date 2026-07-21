@@ -104,7 +104,7 @@
     "jsdom": "^28.1.0",
     "offline-geocode-city": "^1.0.2",
     "panic-overlay": "^1.0.51",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.0",
