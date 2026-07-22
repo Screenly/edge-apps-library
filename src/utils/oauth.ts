@@ -1,3 +1,5 @@
+import { fetchJson } from './http.js'
+
 const TOKEN_REFRESH_INTERVAL_SEC = 30 * 60
 
 /**
@@ -33,21 +35,18 @@ export const initTokenRefreshLoop = (onRefresh: () => Promise<void>): void => {
  * Retrieves credentials from the Screenly OAuth service
  * @param tokenType The token endpoint type (default: 'access_token')
  * @returns An object containing the token and optional metadata from the OAuth provider
+ * @throws {FetchJsonError} If the OAuth service responds with a non-ok status
  */
 export const getCredentials = async (
   tokenType: string = 'access_token',
 ): Promise<{ token: string; metadata?: Record<string, unknown> }> => {
-  const response = await fetch(
+  return fetchJson<{ token: string; metadata?: Record<string, unknown> }>(
     screenly.settings.screenly_oauth_tokens_url + tokenType + '/',
     {
-      method: 'GET',
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${screenly.settings.screenly_app_auth_token}`,
       },
     },
   )
-
-  const { token, metadata } = await response.json()
-  return { token, metadata }
 }

@@ -1,6 +1,7 @@
 export * from './calendar.js'
 export * from './error-handling.js'
 export * from './html.js'
+export * from './http.js'
 export * from './theme.js'
 export * from './locale.js'
 export * from './metadata.js'

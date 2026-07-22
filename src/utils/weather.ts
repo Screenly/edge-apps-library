@@ -5,6 +5,7 @@
 
 import { getSetting, type MeasurementUnit } from './settings.js'
 import { getMetadata } from './metadata.js'
+import { fetchJsonOrDefault } from './http.js'
 
 // Import weather icons
 import clearIcon from '../assets/images/icons/clear.svg'
@@ -185,6 +186,20 @@ export function isValidWeatherResponse(data: {
   )
 }
 
+/**
+ * Shape of the OpenWeatherMap "current weather" API response, limited to
+ * the fields actually read by `fetchCurrentWeatherData`.
+ */
+interface OpenWeatherMapCurrentResponse {
+  cod?: number | string
+  main?: {
+    temp?: number
+    temp_max?: number
+    temp_min?: number
+  }
+  weather?: Array<{ id?: number; description?: string }>
+}
+
 export interface CurrentWeatherRawData {
   temperature: number
   tempHigh: number
@@ -216,35 +231,26 @@ export async function fetchCurrentWeatherData(
       return null
     }
 
-    const response = await fetch(
+    const data = await fetchJsonOrDefault<OpenWeatherMapCurrentResponse | null>(
       `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=${unit}&appid=${apiKey}`,
+      null,
+      {},
+      'Failed to get weather data:',
     )
 
-    if (!response.ok) {
-      console.warn(
-        'Failed to get weather data: OpenWeatherMap API responded with',
-        response.status,
-        response.statusText,
-      )
+    if (!data || !isValidWeatherResponse(data)) {
       return null
     }
 
-    const data = await response.json()
-
-    if (!isValidWeatherResponse(data)) {
-      return null
-    }
-
-    const temperature = Math.round(data.main.temp)
+    const main = data.main!
+    const temperature = Math.round(main.temp!)
     const tempHigh =
-      typeof data.main.temp_max === 'number' &&
-      Number.isFinite(data.main.temp_max)
-        ? Math.round(data.main.temp_max)
+      typeof main.temp_max === 'number' && Number.isFinite(main.temp_max)
+        ? Math.round(main.temp_max)
         : temperature
     const tempLow =
-      typeof data.main.temp_min === 'number' &&
-      Number.isFinite(data.main.temp_min)
-        ? Math.round(data.main.temp_min)
+      typeof main.temp_min === 'number' && Number.isFinite(main.temp_min)
+        ? Math.round(main.temp_min)
         : temperature
     const weatherId = data.weather?.[0]?.id ?? null
 
@@ -282,54 +288,41 @@ export interface CityInfo {
 }
 
 /**
+ * Shape of a single entry in the OpenWeatherMap reverse geocoding API
+ * response, limited to the fields actually read by `getCityInfo`.
+ */
+interface OpenWeatherMapGeoResult {
+  name?: string
+  country?: string
+}
+
+/**
  * Get city information including name and country code from OpenWeatherMap reverse geocoding
  * @param lat - Latitude
  * @param lng - Longitude
  * @returns Object containing cityName and countryCode
  */
 export async function getCityInfo(lat: number, lng: number): Promise<CityInfo> {
-  try {
-    const apiKey = getSetting<string>('openweathermap_api_key')
-    if (!apiKey) {
-      // Fallback to location from metadata if no API key
-      return {
-        cityName: getMetadata().location || 'Unknown Location',
-        countryCode: '',
-      }
-    }
+  const apiKey = getSetting<string>('openweathermap_api_key')
 
-    const response = await fetch(
+  if (apiKey) {
+    const results = await fetchJsonOrDefault<OpenWeatherMapGeoResult[]>(
       `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lng}&limit=1&appid=${apiKey}`,
+      [],
+      {},
+      'Failed to get city info:',
     )
 
-    if (!response.ok) {
-      console.warn(
-        'Failed to get city info: OpenWeatherMap API responded with',
-        response.status,
-        response.statusText,
-      )
+    const { name, country } = results[0] ?? {}
+    if (name && country) {
       return {
-        cityName: getMetadata().location || 'Unknown Location',
-        countryCode: '',
+        cityName: `${name}, ${country}`,
+        countryCode: country,
       }
     }
-
-    const data = await response.json()
-
-    if (Array.isArray(data) && data.length > 0) {
-      const { name, country } = data[0]
-      if (name && country) {
-        return {
-          cityName: `${name}, ${country}`,
-          countryCode: country,
-        }
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get city info:', error)
   }
 
-  // Fallback to location from metadata
+  // Fallback to location from metadata if no API key, no results, or the request failed
   return {
     cityName: getMetadata().location || 'Unknown Location',
     countryCode: '',
