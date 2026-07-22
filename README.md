@@ -148,7 +148,7 @@ signalReady()
 
 ### HTTP Requests
 
-- `fetchJson<T>(url, options?)` - Fetch a URL and parse the response body as JSON. Throws a `FetchJsonError` (with `status`, `statusText`, and `url` fields) if the response is not ok.
+- `fetchJson<T>(url, options?)` - Fetch a URL and parse the response body as JSON. Throws a `FetchJsonError` (with `status`, `statusText`, `url`, and an optional `body` holding the parsed error payload when the server returned one) if the response is not ok. Throws a `FetchJsonParseError` (with `url` and the raw `body` string) if the response is ok but its body is not valid JSON. An ok response with an empty body resolves to `undefined`.
 - `fetchJsonOrDefault<T>(url, fallback, options?, warningMessage?)` - Same as `fetchJson`, but catches any error, logs it with `console.warn` (using `warningMessage` if provided), and returns `fallback` instead of throwing.
 
 Both requests are aborted after a default timeout of 8 seconds (`DEFAULT_TIMEOUT_MS`) unless overridden via `options.timeoutMs`. Pass `0` or `Infinity` to disable the timeout entirely.

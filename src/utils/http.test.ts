@@ -3,6 +3,7 @@ import {
   fetchJson,
   fetchJsonOrDefault,
   FetchJsonError,
+  FetchJsonParseError,
   DEFAULT_TIMEOUT_MS,
 } from './http'
 
@@ -68,6 +69,70 @@ describe('http utilities', () => {
         expect(fetchError.statusText).toBe('Internal Server Error')
         expect(fetchError.url).toBe('https://example.com/broken')
       }
+    })
+
+    test('should attach the parsed JSON body to a thrown FetchJsonError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response(
+            JSON.stringify({ message: 'invalid api key' }),
+            { status: 401 },
+          )
+        }),
+      )
+
+      try {
+        await fetchJson('https://example.com/unauthorized')
+        expect.unreachable('fetchJson should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchJsonError)
+        const fetchError = error as FetchJsonError
+        expect(fetchError.body).toEqual({ message: 'invalid api key' })
+      }
+    })
+
+    test('should leave body undefined on a FetchJsonError when the response is not valid JSON', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response('Not Found', { status: 404 })
+        }),
+      )
+
+      try {
+        await fetchJson('https://example.com/missing')
+        expect.unreachable('fetchJson should have thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(FetchJsonError)
+        const fetchError = error as FetchJsonError
+        expect(fetchError.body).toBeUndefined()
+      }
+    })
+
+    test('should throw a FetchJsonParseError when an ok response is not valid JSON', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response('<html>not json</html>', { status: 200 })
+        }),
+      )
+
+      await expect(
+        fetchJson('https://example.com/html'),
+      ).rejects.toThrow(FetchJsonParseError)
+    })
+
+    test('should resolve with undefined when an ok response has an empty body', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response(null, { status: 204 })
+        }),
+      )
+
+      const data = await fetchJson('https://example.com/no-content')
+      expect(data).toBeUndefined()
     })
 
     test('should propagate network errors from fetch', async () => {
@@ -145,6 +210,7 @@ describe('http utilities', () => {
     })
   })
 
+  // eslint-disable-next-line max-lines-per-function
   describe('fetchJsonOrDefault', () => {
     test('should resolve with parsed JSON on a successful response', async () => {
       vi.stubGlobal(
@@ -175,6 +241,25 @@ describe('http utilities', () => {
       const data = await fetchJsonOrDefault('https://example.com/missing', [])
       expect(data).toEqual([])
       expect(warnSpy).toHaveBeenCalledTimes(1)
+
+      warnSpy.mockRestore()
+    })
+
+    test('should return the fallback and log a warning when the response is not valid JSON', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response('<html>not json</html>', { status: 200 })
+        }),
+      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      const data = await fetchJsonOrDefault('https://example.com/html', [])
+      expect(data).toEqual([])
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to fetch JSON:',
+        expect.any(FetchJsonParseError),
+      )
 
       warnSpy.mockRestore()
     })

@@ -27,7 +27,11 @@ export const DEFAULT_TIMEOUT_MS = 8000
 
 /**
  * Error thrown by `fetchJson` when a response is received but its status
- * is outside the 200-299 range.
+ * is outside the 200-299 range. If the response body could be parsed as
+ * JSON, the parsed value is available as `body` so callers can surface
+ * API-provided error details (e.g. `{ "message": "invalid api key" }`).
+ * `body` is left `undefined` when the response body was empty or was not
+ * valid JSON, such as an HTML error page.
  */
 export class FetchJsonError extends Error {
   constructor(
@@ -35,6 +39,7 @@ export class FetchJsonError extends Error {
     public readonly status: number,
     public readonly statusText: string,
     public readonly url: string,
+    public readonly body?: unknown,
   ) {
     super(message)
     this.name = 'FetchJsonError'
@@ -42,11 +47,38 @@ export class FetchJsonError extends Error {
 }
 
 /**
+ * Error thrown by `fetchJson` when a response is ok (status 200-299) but
+ * its body is not valid JSON, such as an HTML error page served with a
+ * 200, or a plain-text body. Distinct from `FetchJsonError` so callers can
+ * tell "the request failed" apart from "the request succeeded but the
+ * body could not be parsed" without inspecting a native `SyntaxError`.
+ */
+export class FetchJsonParseError extends Error {
+  constructor(
+    message: string,
+    public readonly url: string,
+    public readonly body: string,
+  ) {
+    super(message)
+    this.name = 'FetchJsonParseError'
+  }
+}
+
+/**
  * Fetch a URL and parse the response body as JSON.
  *
- * Throws a `FetchJsonError` if the response status is not ok, or the
- * underlying `fetch` error (including an abort error on timeout) otherwise.
- * Callers that want a non-throwing variant should use `fetchJsonOrDefault`.
+ * The response body is read once via `response.text()` (a `Response` body
+ * can only be consumed once, so `.text()` and `.json()` cannot both be
+ * called on it), then parsed with `JSON.parse`.
+ *
+ * Throws a `FetchJsonError` if the response status is not ok (its `body`
+ * field carries the parsed error payload when the server returned one), a
+ * `FetchJsonParseError` if the response is ok but its body is not valid
+ * JSON, or the underlying `fetch` error (including an abort error on
+ * timeout) otherwise. An ok response with an empty body resolves to
+ * `undefined` rather than throwing, to accommodate responses such as a 204
+ * No Content. Callers that want a non-throwing variant should use
+ * `fetchJsonOrDefault`.
  *
  * @param url - URL to request
  * @param options - Standard fetch options, plus an optional `timeoutMs` to
@@ -68,17 +100,38 @@ export async function fetchJson<T = unknown>(
 
   try {
     const response = await fetch(url, init)
+    const text = await response.text()
 
     if (!response.ok) {
+      let body: unknown
+      try {
+        body = JSON.parse(text) as unknown
+      } catch {
+        body = undefined
+      }
+
       throw new FetchJsonError(
         `Request to ${url} failed with status ${response.status}`,
         response.status,
         response.statusText,
         url,
+        body,
       )
     }
 
-    return (await response.json()) as T
+    if (text === '') {
+      return undefined as T
+    }
+
+    try {
+      return JSON.parse(text) as T
+    } catch {
+      throw new FetchJsonParseError(
+        `Response from ${url} was not valid JSON`,
+        url,
+        text,
+      )
+    }
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId)
   }
@@ -86,8 +139,9 @@ export async function fetchJson<T = unknown>(
 
 /**
  * Fetch a URL and parse the response body as JSON, returning `fallback`
- * instead of throwing when the request fails (network error, timeout, or a
- * non-ok response status). Logs a `console.warn` with the failure reason.
+ * instead of throwing when the request fails (network error, timeout, a
+ * non-ok response status, or an ok response whose body is not valid
+ * JSON). Logs a `console.warn` with the failure reason.
  *
  * Useful for optional data where a failed request should not interrupt
  * rendering, e.g. an Edge App falling back to a default value.
