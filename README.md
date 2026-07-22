@@ -146,6 +146,32 @@ signalReady()
 - `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
 - `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
 
+### HTTP Requests
+
+- `fetchJson<T>(url, options?)` - Fetch a URL and parse the response body as JSON. Throws a `FetchJsonError` (with `status`, `statusText`, and `url` fields) if the response is not ok.
+- `fetchJsonOrDefault<T>(url, fallback, options?, warningMessage?)` - Same as `fetchJson`, but catches any error, logs it with `console.warn` (using `warningMessage` if provided), and returns `fallback` instead of throwing.
+
+Both requests are aborted after a default timeout of 8 seconds (`DEFAULT_TIMEOUT_MS`) unless overridden via `options.timeoutMs`. Pass `0` or `Infinity` to disable the timeout entirely.
+
+```typescript
+const settings = await fetchJson<Settings>('https://api.example.com/settings')
+
+const settings = await fetchJsonOrDefault<Settings>(
+  'https://api.example.com/settings',
+  defaultSettings,
+)
+```
+
+```typescript
+const settings = await fetchJson<Settings>('https://api.example.com/settings', {
+  timeoutMs: 3000,
+})
+
+const settings = await fetchJson<Settings>('https://api.example.com/settings', {
+  timeoutMs: 0,
+})
+```
+
 ## Web Components
 
 This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/main/docs/components.md) for usage details.
