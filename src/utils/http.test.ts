@@ -1,5 +1,10 @@
 import { describe, test, expect, afterEach, vi } from 'vitest'
-import { fetchJson, fetchJsonOrDefault, FetchJsonError } from './http'
+import {
+  fetchJson,
+  fetchJsonOrDefault,
+  FetchJsonError,
+  DEFAULT_TIMEOUT_MS,
+} from './http'
 
 // eslint-disable-next-line max-lines-per-function
 describe('http utilities', () => {
@@ -91,6 +96,52 @@ describe('http utilities', () => {
       await expect(
         fetchJson('https://example.com/slow', { timeoutMs: 10 }),
       ).rejects.toThrow('Aborted')
+    })
+
+    test('should apply the default timeout when timeoutMs is omitted', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((_url: string, init?: RequestInit) => {
+          return new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+        }),
+      )
+
+      const result = expect(
+        fetchJson('https://example.com/slow'),
+      ).rejects.toThrow('Aborted')
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_TIMEOUT_MS)
+      await result
+
+      vi.useRealTimers()
+    })
+
+    test('should not abort by the default timeout when an explicit timeoutMs overrides it', async () => {
+      vi.useFakeTimers()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          return new Response(JSON.stringify({ hello: 'world' }), {
+            status: 200,
+          })
+        }),
+      )
+
+      const result = expect(
+        fetchJson('https://example.com/data', {
+          timeoutMs: DEFAULT_TIMEOUT_MS * 2,
+        }),
+      ).resolves.toEqual({ hello: 'world' })
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_TIMEOUT_MS)
+      await result
+
+      vi.useRealTimers()
     })
   })
 

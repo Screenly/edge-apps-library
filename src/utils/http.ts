@@ -10,11 +10,20 @@
  */
 export interface FetchJsonOptions extends RequestInit {
   /**
-   * Abort the request after this many milliseconds.
-   * If a `signal` is also provided, the timeout takes precedence.
+   * Abort the request after this many milliseconds. Defaults to
+   * `DEFAULT_TIMEOUT_MS` when omitted. Pass `0` or `Infinity` to disable
+   * the timeout entirely. If a `signal` is also provided, the timeout
+   * takes precedence.
    */
   timeoutMs?: number
 }
+
+/**
+ * Default request timeout applied by `fetchJson` when the caller does not
+ * pass `timeoutMs`. Kept below the screenshotter's ~10s network-idle
+ * budget so a fallback/error path still has time to run.
+ */
+export const DEFAULT_TIMEOUT_MS = 8000
 
 /**
  * Error thrown by `fetchJson` when a response is received but its status
@@ -41,16 +50,17 @@ export class FetchJsonError extends Error {
  *
  * @param url - URL to request
  * @param options - Standard fetch options, plus an optional `timeoutMs` to
- *   abort the request after a given duration
+ *   abort the request after a given duration (defaults to
+ *   `DEFAULT_TIMEOUT_MS`; pass `0` or `Infinity` to disable)
  */
 export async function fetchJson<T = unknown>(
   url: string,
   options: FetchJsonOptions = {},
 ): Promise<T> {
-  const { timeoutMs, ...init } = options
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...init } = options
   let timeoutId: ReturnType<typeof setTimeout> | undefined
 
-  if (timeoutMs !== undefined) {
+  if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
     const controller = new AbortController()
     timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     init.signal = controller.signal
