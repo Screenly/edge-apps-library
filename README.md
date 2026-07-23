@@ -156,20 +156,22 @@ Both requests are aborted after a default timeout of 8 seconds (`DEFAULT_TIMEOUT
 ```typescript
 const settings = await fetchJson<Settings>('https://api.example.com/settings')
 
-const settings = await fetchJsonOrDefault<Settings>(
+const settingsWithFallback = await fetchJsonOrDefault<Settings>(
   'https://api.example.com/settings',
   defaultSettings,
 )
 ```
 
 ```typescript
-const settings = await fetchJson<Settings>('https://api.example.com/settings', {
-  timeoutMs: 3000,
-})
+const settingsWithTimeout = await fetchJson<Settings>(
+  'https://api.example.com/settings',
+  { timeoutMs: 3000 },
+)
 
-const settings = await fetchJson<Settings>('https://api.example.com/settings', {
-  timeoutMs: 0,
-})
+const settingsNoTimeout = await fetchJson<Settings>(
+  'https://api.example.com/settings',
+  { timeoutMs: 0 },
+)
 ```
 
 ## Web Components
