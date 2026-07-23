@@ -11,6 +11,7 @@ import {
 describe('http utilities', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   // eslint-disable-next-line max-lines-per-function
@@ -240,8 +241,6 @@ describe('http utilities', () => {
       const data = await fetchJsonOrDefault('https://example.com/missing', [])
       expect(data).toEqual([])
       expect(warnSpy).toHaveBeenCalledTimes(1)
-
-      warnSpy.mockRestore()
     })
 
     test('should return the fallback and log a warning when the response is not valid JSON', async () => {
@@ -259,8 +258,6 @@ describe('http utilities', () => {
         'Failed to fetch JSON:',
         expect.any(FetchJsonParseError),
       )
-
-      warnSpy.mockRestore()
     })
 
     test('should return the fallback on a network error', async () => {
@@ -272,6 +269,25 @@ describe('http utilities', () => {
 
       const data = await fetchJsonOrDefault('https://example.com/data', null)
       expect(data).toBeNull()
+    })
+
+    test('should return fallback instead of undefined when an ok response has an empty body', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status: 204 })),
+      )
+
+      const arrayFallback = await fetchJsonOrDefault<number[]>(
+        'https://example.com/no-content',
+        [1, 2, 3],
+      )
+      expect(arrayFallback).toEqual([1, 2, 3])
+
+      const objectFallback = await fetchJsonOrDefault<{ hello: string }>(
+        'https://example.com/no-content',
+        { hello: 'fallback' },
+      )
+      expect(objectFallback).toEqual({ hello: 'fallback' })
     })
 
     test('should use a custom warning message when provided', async () => {
@@ -292,8 +308,6 @@ describe('http utilities', () => {
         'Custom failure message:',
         expect.any(FetchJsonError),
       )
-
-      warnSpy.mockRestore()
     })
   })
 })

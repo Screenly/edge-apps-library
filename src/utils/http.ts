@@ -143,11 +143,16 @@ export async function fetchJson<T = unknown>(
  * non-ok response status, or an ok response whose body is not valid
  * JSON). Logs a `console.warn` with the failure reason.
  *
+ * An ok response with an empty body also resolves to `fallback` here
+ * rather than `undefined`, since this function's contract is to always
+ * return a `T`.
+ *
  * Useful for optional data where a failed request should not interrupt
  * rendering, e.g. an Edge App falling back to a default value.
  *
  * @param url - URL to request
- * @param fallback - Value returned when the request fails
+ * @param fallback - Value returned when the request fails, or when an ok
+ *   response resolves to `undefined` (an empty body)
  * @param options - Standard fetch options, plus an optional `timeoutMs`
  * @param warningMessage - Message logged (via `console.warn`) before the
  *   error, to give context on which request failed
@@ -159,7 +164,8 @@ export async function fetchJsonOrDefault<T>(
   warningMessage = 'Failed to fetch JSON:',
 ): Promise<T> {
   try {
-    return await fetchJson<T>(url, options)
+    const result = await fetchJson<T>(url, options)
+    return result === undefined ? fallback : result
   } catch (error) {
     console.warn(warningMessage, error)
     return fallback
