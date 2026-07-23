@@ -208,6 +208,30 @@ describe('http utilities', () => {
 
       vi.useRealTimers()
     })
+
+    test('should abort the request when a caller-provided signal aborts, even before timeoutMs elapses', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((_url: string, init?: RequestInit) => {
+          return new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          })
+        }),
+      )
+
+      const callerController = new AbortController()
+      const result = expect(
+        fetchJson('https://example.com/slow', {
+          signal: callerController.signal,
+          timeoutMs: DEFAULT_TIMEOUT_MS * 2,
+        }),
+      ).rejects.toThrow('Aborted')
+
+      callerController.abort()
+      await result
+    })
   })
 
   // eslint-disable-next-line max-lines-per-function
@@ -308,6 +332,43 @@ describe('http utilities', () => {
         'Custom failure message:',
         expect.any(FetchJsonError),
       )
+    })
+
+    test('should redact sensitive query params from the URL before logging a FetchJsonError', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response('Not Found', { status: 404 })),
+      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await fetchJsonOrDefault(
+        'https://example.com/missing?appid=super-secret-key',
+        null,
+      )
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      const loggedError = warnSpy.mock.calls[0]?.[1] as FetchJsonError
+      expect(loggedError).toBeInstanceOf(FetchJsonError)
+      expect(loggedError.url).not.toContain('super-secret-key')
+      expect(loggedError.url).toContain('appid=%5BREDACTED%5D')
+      expect(loggedError.message).not.toContain('super-secret-key')
+    })
+
+    test('should truncate a long body when logging a FetchJsonParseError', async () => {
+      const longBody = 'x'.repeat(500)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(longBody, { status: 200 })),
+      )
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await fetchJsonOrDefault('https://example.com/html', null)
+
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      const loggedError = warnSpy.mock.calls[0]?.[1] as FetchJsonParseError
+      expect(loggedError).toBeInstanceOf(FetchJsonParseError)
+      expect(loggedError.body.length).toBeLessThan(longBody.length)
+      expect(loggedError.body.endsWith('...')).toBe(true)
     })
   })
 })

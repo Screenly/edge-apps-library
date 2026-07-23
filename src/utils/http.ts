@@ -3,6 +3,53 @@
  * Shared helpers for making fetch requests and parsing JSON responses,
  * reducing boilerplate around checking `response.ok` and error handling.
  */
+import { SENSITIVE_KEY_PATTERNS } from './sentry.js'
+
+/**
+ * Query param name patterns treated as sensitive when redacting a URL for
+ * logging. Extends the shared `SENSITIVE_KEY_PATTERNS` from `sentry.ts`
+ * with a couple of patterns specific to URL query params (e.g. `appid`,
+ * `apikey`) without altering `sentry.ts`'s own behaviour.
+ */
+const URL_SENSITIVE_KEY_PATTERNS = [...SENSITIVE_KEY_PATTERNS, 'key', 'appid']
+
+function isSensitiveQueryKey(key: string): boolean {
+  const lowerKey = key.toLowerCase()
+  return URL_SENSITIVE_KEY_PATTERNS.some((pattern) =>
+    lowerKey.includes(pattern),
+  )
+}
+
+/**
+ * Redact the values of any sensitive-looking query params (e.g. `token`,
+ * `apikey`, `appid`) from a URL, for safe use in logs. Returns the original
+ * string unchanged if it cannot be parsed as a URL.
+ */
+export function redactUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (isSensitiveQueryKey(key)) {
+        parsed.searchParams.set(key, '[REDACTED]')
+      }
+    }
+    return parsed.toString()
+  } catch {
+    return url
+  }
+}
+
+const MAX_LOGGED_BODY_LENGTH = 200
+
+/**
+ * Truncate a response body for safe use in logs, to avoid dumping large or
+ * sensitive payloads into log output.
+ */
+export function truncateForLogging(body: string): string {
+  return body.length > MAX_LOGGED_BODY_LENGTH
+    ? `${body.slice(0, MAX_LOGGED_BODY_LENGTH)}...`
+    : body
+}
 
 /**
  * Options accepted by `fetchJson` and `fetchJsonOrDefault`.
@@ -12,8 +59,8 @@ export interface FetchJsonOptions extends RequestInit {
   /**
    * Abort the request after this many milliseconds. Defaults to
    * `DEFAULT_TIMEOUT_MS` when omitted. Pass `0` or `Infinity` to disable
-   * the timeout entirely. If a `signal` is also provided, the timeout
-   * takes precedence.
+   * the timeout entirely. If a `signal` is also provided, either it or the
+   * timeout aborting will cancel the request.
    */
   timeoutMs?: number
 }
@@ -77,8 +124,9 @@ export class FetchJsonParseError extends Error {
  * JSON, or the underlying `fetch` error (including an abort error on
  * timeout) otherwise. An ok response with an empty body resolves to
  * `undefined` rather than throwing, to accommodate responses such as a 204
- * No Content. Callers that want a non-throwing variant should use
- * `fetchJsonOrDefault`.
+ * No Content, so the resolved type is `T | undefined` and callers that
+ * require a value should check for `undefined` explicitly. Callers that
+ * want a non-throwing variant should use `fetchJsonOrDefault`.
  *
  * @param url - URL to request
  * @param options - Standard fetch options, plus an optional `timeoutMs` to
@@ -88,18 +136,25 @@ export class FetchJsonParseError extends Error {
 export async function fetchJson<T = unknown>(
   url: string,
   options: FetchJsonOptions = {},
-): Promise<T> {
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...init } = options
+): Promise<T | undefined> {
+  const {
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    signal: callerSignal,
+    ...init
+  } = options
   let timeoutId: ReturnType<typeof setTimeout> | undefined
+  let signal = callerSignal
 
   if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
     const controller = new AbortController()
     timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-    init.signal = controller.signal
+    signal = callerSignal
+      ? AbortSignal.any([callerSignal, controller.signal])
+      : controller.signal
   }
 
   try {
-    const response = await fetch(url, init)
+    const response = await fetch(url, { ...init, signal })
     const text = await response.text()
 
     if (!response.ok) {
@@ -120,7 +175,7 @@ export async function fetchJson<T = unknown>(
     }
 
     if (text === '') {
-      return undefined as T
+      return undefined
     }
 
     try {
@@ -167,7 +222,37 @@ export async function fetchJsonOrDefault<T>(
     const result = await fetchJson<T>(url, options)
     return result === undefined ? fallback : result
   } catch (error) {
-    console.warn(warningMessage, error)
+    console.warn(warningMessage, toLoggableError(error))
     return fallback
   }
+}
+
+/**
+ * Build a safe-to-log representation of an error thrown by `fetchJson`,
+ * with the URL's sensitive query params redacted and, for
+ * `FetchJsonParseError`, the raw body truncated. Used only for logging;
+ * callers still receive the original, unredacted error.
+ */
+function toLoggableError(error: unknown): unknown {
+  if (error instanceof FetchJsonParseError) {
+    const redactedUrl = redactUrl(error.url)
+    return new FetchJsonParseError(
+      `Response from ${redactedUrl} was not valid JSON`,
+      redactedUrl,
+      truncateForLogging(error.body),
+    )
+  }
+
+  if (error instanceof FetchJsonError) {
+    const redactedUrl = redactUrl(error.url)
+    return new FetchJsonError(
+      `Request to ${redactedUrl} failed with status ${error.status}`,
+      error.status,
+      error.statusText,
+      redactedUrl,
+      error.body,
+    )
+  }
+
+  return error
 }
