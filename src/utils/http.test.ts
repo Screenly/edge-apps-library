@@ -75,10 +75,9 @@ describe('http utilities', () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => {
-          return new Response(
-            JSON.stringify({ message: 'invalid api key' }),
-            { status: 401 },
-          )
+          return new Response(JSON.stringify({ message: 'invalid api key' }), {
+            status: 401,
+          })
         }),
       )
 
@@ -118,9 +117,9 @@ describe('http utilities', () => {
         }),
       )
 
-      await expect(
-        fetchJson('https://example.com/html'),
-      ).rejects.toThrow(FetchJsonParseError)
+      await expect(fetchJson('https://example.com/html')).rejects.toThrow(
+        FetchJsonParseError,
+      )
     })
 
     test('should resolve with undefined when an ok response has an empty body', async () => {
