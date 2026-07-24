@@ -150,6 +150,25 @@ signalReady()
 
 This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/main/docs/components.md) for usage details.
 
+## Styling with Tailwind CSS
+
+Edge Apps scaffolded with `create` come with [Tailwind CSS](https://tailwindcss.com/) enabled out of the box via `@tailwindcss/vite` — no extra install or config file needed. Just add the import to your app's stylesheet:
+
+```css
+@import 'tailwindcss';
+```
+
+Then use utility classes directly in your markup instead of writing custom CSS:
+
+```html
+<main class="flex h-full w-full items-center justify-center">
+  <h1 class="text-6xl portrait:text-4xl">Hello, Screenly!</h1>
+</main>
+```
+
+> [!IMPORTANT]
+> Inside `<auto-scaler>`, use `h-full`/`w-full` instead of `h-screen`/`w-screen`. `<auto-scaler>` renders its content into a fixed-size box (the `reference-width`/`reference-height` you pass it) and scales that box to fit the real viewport with a CSS transform. Viewport-relative utilities (`h-screen`, `w-screen`, or arbitrary `vh`/`vw` values) measure the real viewport, not the scaled box, so they won't line up with the rest of your layout. The `portrait:`/`landscape:` variants are unaffected since they're based on device orientation, which `<auto-scaler>` uses the same way.
+
 ## Edge Apps Scripts CLI
 
 This package provides the `edge-apps-scripts` CLI tool for running shared development commands across all Edge Apps. It includes centralized ESLint configuration to avoid duplication.

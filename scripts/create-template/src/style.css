@@ -1,3 +1,4 @@
+@import 'tailwindcss';
 @import '@screenly/edge-apps/styles';
 
 * {
@@ -9,20 +10,6 @@ body {
   padding: 0;
   overflow: hidden;
   font-family: 'Inter', system-ui, sans-serif;
-}
-
-#app {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-
-.content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 #message {

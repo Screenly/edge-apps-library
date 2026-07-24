@@ -16,6 +16,8 @@ Install dependencies:
 {{PM_RUN}} dev
 ```
 
+Styling uses [Tailwind CSS](https://tailwindcss.com/) utility classes, enabled via `@import 'tailwindcss';` in `src/style.css`. Inside `<auto-scaler>`, use `h-full`/`w-full` rather than `h-screen`/`w-screen` — see the [`@screenly/edge-apps` README](https://github.com/Screenly/edge-apps-library#styling-with-tailwind-css) for details.
+
 ## Build
 
 ```bash
