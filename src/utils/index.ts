@@ -1,5 +1,7 @@
+export * from './backend-error.js'
 export * from './calendar.js'
 export * from './error-handling.js'
+export * from './persistent-cache.js'
 export * from './html.js'
 export * from './theme.js'
 export * from './locale.js'

@@ -140,11 +140,107 @@ signalReady()
 - `addUTMParams(url, params?)` - Add UTM parameters to URL
 - `addUTMParamsIf(url, enabled, params?)` - Conditionally add UTM parameters
 
+### Persistent Cache & Backend Errors
+
+- `createPersistentCache(namespace)` - Create a `localStorage`-backed, namespaced last-known-good value cache
+- `BackendServerError` - Error class marking a transient (network/5xx/429) backend failure
+- `shouldSkipBackendError(error, displayErrors)` - Decide whether to fall back to cache instead of surfacing the error
+
 ### Error Reporting (Sentry)
 
 - `setupSentry(app, contexts?)` - Initialize Sentry using the `sentry_dsn` setting; sets the `edge_app` tag, hostname, and any additional contexts. No-ops if `sentry_dsn` is not configured.
 - `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
 - `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
+
+### Persistent Cache & Backend Error Handling
+
+When an Edge App fetches data from a backend, a transient failure (network
+blip, backend 5xx/429) shouldn't necessarily break the display — falling back
+to the last-known-good value is often better than showing an error. These two
+utilities work together to support that pattern.
+
+#### `createPersistentCache(namespace)`
+
+Creates a `localStorage`-backed cache namespaced under `namespace`, so
+different apps/caches don't collide. There is no TTL: it's meant to store the
+last-known-good value and be consulted only after a genuine fetch failure, not
+as a general-purpose expiring cache. All reads/writes fail silently (return
+`null` / no-op) if storage is unavailable, disabled, or full — so it's safe to
+use without extra error handling around it.
+
+`write()` accepts any JSON-serializable value (object, array, string, number,
+etc.) — `WeatherData` below is just a stand-in name for "whatever your fetch
+returns," not a type this library exports.
+
+```typescript
+import { createPersistentCache } from '@screenly/edge-apps'
+
+const cache = createPersistentCache('my-edge-app')
+
+// weatherData can be any JSON-serializable shape, e.g.:
+// { temperature: 18, description: 'Cloudy', unit: 'metric' }
+cache.write('weather', weatherData)
+
+// Later, read it back (returns null if never written or unreadable)
+const cachedWeather = cache.read<WeatherData>('weather')
+```
+
+#### `BackendServerError` and `shouldSkipBackendError()`
+
+`BackendServerError` marks a transient, non-configuration failure (e.g.
+network unreachable, or the backend returning a 5xx/429) as opposed to a
+genuine application error (misconfiguration, missing scopes, malformed data).
+Throw it from your fetch/backend layer specifically for the transient case:
+
+```typescript
+import { BackendServerError } from '@screenly/edge-apps'
+
+async function fetchWeather() {
+  const response = await fetch(weatherApiUrl)
+  if (!response.ok) {
+    throw new BackendServerError(`Weather API returned ${response.status}`)
+  }
+  return response.json()
+}
+```
+
+`shouldSkipBackendError(error, displayErrors)` then decides whether that
+failure should be swallowed in favor of a cached value, rather than surfacing
+it. It returns `true` only when both:
+
+- `error` is a `BackendServerError` (a transient failure a cached value can
+  plausibly paper over), and
+- `displayErrors` is `false` (when the `display_errors` debug setting is on,
+  the raw error always wins, by design, so operators can diagnose real
+  problems).
+
+Combining the two in an Edge App typically looks like:
+
+```typescript
+import {
+  createPersistentCache,
+  BackendServerError,
+  shouldSkipBackendError,
+  getSettingWithDefault,
+} from '@screenly/edge-apps'
+
+const cache = createPersistentCache('my-edge-app')
+
+async function loadWeather() {
+  const displayErrors = getSettingWithDefault('display_errors', false)
+
+  try {
+    const data = await fetchWeather()
+    cache.write('weather', data)
+    return data
+  } catch (error) {
+    if (shouldSkipBackendError(error, displayErrors)) {
+      return cache.read('weather')
+    }
+    throw error
+  }
+}
+```
 
 ## Web Components
 
@@ -242,6 +338,7 @@ import type {
   ThemeColors,
   BrandingConfig,
   UTMParams,
+  PersistentCache,
 } from '@screenly/edge-apps'
 ```
 
