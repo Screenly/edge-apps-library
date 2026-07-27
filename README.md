@@ -155,9 +155,15 @@ This library includes reusable web components for building consistent Edge Apps.
 Edge Apps scaffolded with `create` come with [Tailwind CSS](https://tailwindcss.com/) enabled out of the box via `@tailwindcss/vite` — no extra install or config file needed. Just add the import to your app's stylesheet:
 
 ```css
+@layer theme, base, utilities;
+
 @import 'tailwindcss/theme.css' layer(theme);
+@import '@screenly/edge-apps/styles' layer(base);
 @import 'tailwindcss/utilities.css' layer(utilities);
 ```
+
+> [!IMPORTANT]
+> Declare the layer order up front with `@layer theme, base, utilities;`, and import `@screenly/edge-apps/styles` (and any other unlayered base CSS) into the `base` layer. Per the CSS Cascade Layers spec, unlayered CSS always beats layered CSS regardless of selector specificity — so without this, `@screenly/edge-apps/styles`'s base rules (e.g. its `user-select: none` reset) would silently override Tailwind utility classes.
 
 Then use utility classes directly in your markup instead of writing custom CSS:
 

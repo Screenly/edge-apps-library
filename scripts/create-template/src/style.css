@@ -3,21 +3,28 @@
    <app-header>, which style themselves through `:host` in their own shadow
    DOM. That reset silently overrides their styling. Import just the theme
    and utilities instead. */
+@layer theme, base, utilities;
+
 @import 'tailwindcss/theme.css' layer(theme);
+/* @screenly/edge-apps/styles and the rules below go in the `base` layer so
+   Tailwind utilities (declared after `base` above) always win the cascade,
+   regardless of selector specificity. */
+@import '@screenly/edge-apps/styles' layer(base);
 @import 'tailwindcss/utilities.css' layer(utilities);
-@import '@screenly/edge-apps/styles';
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
-}
+  body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
 
-#message {
-  color: var(--theme-color-primary, #972eff);
+  #message {
+    color: var(--theme-color-primary, #972eff);
+  }
 }
