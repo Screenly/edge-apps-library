@@ -1,4 +1,10 @@
-@import 'tailwindcss';
+/* Skip Tailwind's preflight: it resets `border`/`margin`/`padding` on every
+   element via a universal selector, including custom-element hosts like
+   <app-header>, which style themselves through `:host` in their own shadow
+   DOM. That reset silently overrides their styling. Import just the theme
+   and utilities instead. */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @import '@screenly/edge-apps/styles';
 
 * {
