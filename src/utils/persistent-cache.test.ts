@@ -1,9 +1,13 @@
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createPersistentCache } from './persistent-cache'
 
 describe('createPersistentCache', () => {
   beforeEach(() => {
     localStorage.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   test('returns null for a key that was never written', () => {
@@ -35,14 +39,10 @@ describe('createPersistentCache', () => {
   })
 
   test('read does not throw when localStorage is unavailable', () => {
-    const originalLocalStorage = globalThis.localStorage
-    // @ts-expect-error simulating an environment without localStorage
-    delete globalThis.localStorage
+    vi.stubGlobal('localStorage', undefined)
 
     const cache = createPersistentCache('test-app')
     expect(cache.read('credentials')).toBeNull()
     expect(() => cache.write('credentials', { accessToken: 'x' })).not.toThrow()
-
-    globalThis.localStorage = originalLocalStorage
   })
 })

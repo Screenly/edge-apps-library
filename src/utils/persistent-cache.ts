@@ -42,7 +42,9 @@ export function createPersistentCache(namespace: string): PersistentCache {
     if (!storage) return
 
     try {
-      storage.setItem(`${prefix}${key}`, JSON.stringify(value))
+      const serialized = JSON.stringify(value)
+      if (serialized === undefined) return
+      storage.setItem(`${prefix}${key}`, serialized)
     } catch {
       // Storage disabled or quota exceeded; caller simply has nothing cached.
     }

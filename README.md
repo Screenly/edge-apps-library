@@ -152,14 +152,14 @@ signalReady()
 - `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
 - `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
 
-### Persistent Cache & Backend Error Handling
+## Persistent Cache & Backend Error Handling
 
 When an Edge App fetches data from a backend, a transient failure (network
 blip, backend 5xx/429) shouldn't necessarily break the display — falling back
 to the last-known-good value is often better than showing an error. These two
 utilities work together to support that pattern.
 
-#### `createPersistentCache(namespace)`
+### `createPersistentCache(namespace)`
 
 Creates a `localStorage`-backed cache namespaced under `namespace`, so
 different apps/caches don't collide. There is no TTL: it's meant to store the
@@ -185,7 +185,7 @@ cache.write('weather', weatherData)
 const cachedWeather = cache.read<WeatherData>('weather')
 ```
 
-#### `BackendServerError` and `shouldSkipBackendError()`
+### `BackendServerError` and `shouldSkipBackendError()`
 
 `BackendServerError` marks a transient, non-configuration failure (e.g.
 network unreachable, or the backend returning a 5xx/429) as opposed to a

@@ -5,7 +5,12 @@
  * kind are eligible for persistent-cache failover - see
  * `shouldSkipBackendError()`.
  */
-export class BackendServerError extends Error {}
+export class BackendServerError extends Error {
+  constructor(message?: string) {
+    super(message)
+    this.name = 'BackendServerError'
+  }
+}
 
 /**
  * Decides whether a failure should be swallowed in favor of falling back to
