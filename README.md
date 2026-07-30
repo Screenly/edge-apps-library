@@ -146,6 +146,33 @@ signalReady()
 - `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
 - `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
 
+### OAuth & Token Refresh
+
+- `getCredentials(tokenType?)` - Fetch a token (and optional metadata) from the Screenly OAuth service. Defaults to the `access_token` endpoint.
+- `initTokenRefreshLoop(onRefresh, options?)` - Start a background loop that periodically calls `onRefresh`, with exponential back-off on failure. By default it polls on a fixed 30-minute interval, which is all existing callers need:
+
+  ```ts
+  initTokenRefreshLoop(async () => {
+    const { token } = await getCredentials()
+    accessToken = token
+  })
+  ```
+
+  To schedule refreshes based on actual token expiration instead of the fixed interval, resolve an `{ expiresAt }` hint from `onRefresh`. The next run is then scheduled after a fraction of the token's remaining lifetime (clamped between `options.minDelaySec` and `options.maxIntervalSec`) instead of waiting the full interval:
+
+  ```ts
+  initTokenRefreshLoop(
+    async () => {
+      const { token, metadata } = await getCredentials()
+      accessToken = token
+      return { expiresAt: metadata?.expiration as string | undefined }
+    },
+    { maxIntervalSec: 5 * 60 },
+  )
+  ```
+
+  If the hint is omitted, `null`, or unparseable, that cycle falls back to the fixed-interval behavior.
+
 ## Web Components
 
 This library includes reusable web components for building consistent Edge Apps. See the [components documentation](https://github.com/Screenly/edge-apps-library/blob/main/docs/components.md) for usage details.
