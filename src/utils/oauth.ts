@@ -32,11 +32,18 @@ export const initTokenRefreshLoop = (onRefresh: () => Promise<void>): void => {
 /**
  * Retrieves credentials from the Screenly OAuth service
  * @param tokenType The token endpoint type (default: 'access_token')
- * @returns An object containing the token and optional metadata from the OAuth provider
+ * @returns An object containing the token, optional expiration (an ISO
+ * timestamp string indicating when the token expires, or null/undefined if
+ * the backend doesn't provide one), and optional metadata from the OAuth
+ * provider
  */
 export const getCredentials = async (
   tokenType: string = 'access_token',
-): Promise<{ token: string; metadata?: Record<string, unknown> }> => {
+): Promise<{
+  token: string
+  expiration?: string | null
+  metadata?: Record<string, unknown>
+}> => {
   const response = await fetch(
     screenly.settings.screenly_oauth_tokens_url + tokenType + '/',
     {
@@ -48,6 +55,6 @@ export const getCredentials = async (
     },
   )
 
-  const { token, metadata } = await response.json()
-  return { token, metadata }
+  const { token, expiration, metadata } = await response.json()
+  return { token, expiration, metadata }
 }
