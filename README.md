@@ -140,11 +140,66 @@ signalReady()
 - `addUTMParams(url, params?)` - Add UTM parameters to URL
 - `addUTMParamsIf(url, enabled, params?)` - Conditionally add UTM parameters
 
+### Edge App Cache
+
+- `readEdgeAppCache(namespace, key)` - Read a `localStorage`-backed, namespaced last-known-good value
+- `writeEdgeAppCache(namespace, key, value)` - Write a `localStorage`-backed, namespaced last-known-good value
+
 ### Error Reporting (Sentry)
 
 - `setupSentry(app, contexts?)` - Initialize Sentry using the `sentry_dsn` setting; sets the `edge_app` tag, hostname, and any additional contexts. No-ops if `sentry_dsn` is not configured.
 - `scrubSensitiveData(event)` - Sentry `beforeSend` hook that redacts values of settings keys matching `token`, `secret`, `password`, or `credential` with `[REDACTED]`. Drops the event if it cannot be safely serialized.
 - `reportError(error, context?)` - Capture an exception via Sentry with optional extra context.
+
+## Edge App Cache
+
+When an Edge App fetches data from a backend, a failure shouldn't necessarily
+break the display — falling back to the last-known-good value is often better
+than showing an error.
+
+### `readEdgeAppCache(namespace, key)` / `writeEdgeAppCache(namespace, key, value)`
+
+Read/write a `localStorage`-backed value under `namespace`, so different
+apps/caches don't collide. There is no TTL: it's meant to store the
+last-known-good value and be consulted only after a genuine fetch failure, not
+as a general-purpose expiring cache — and `localStorage` itself isn't
+guaranteed to survive a device reboot. Both fail silently (return `null` /
+no-op) if storage is unavailable, disabled, or full — so it's safe to use
+without extra error handling around it.
+
+`writeEdgeAppCache()` accepts any JSON-serializable value (object, array,
+string, number, etc.) — `WeatherData` below is just a stand-in name for
+"whatever your fetch returns," not a type this library exports.
+
+```typescript
+import {
+  readEdgeAppCache,
+  writeEdgeAppCache,
+  getSettingWithDefault,
+} from '@screenly/edge-apps'
+
+async function loadWeather() {
+  const displayErrors = getSettingWithDefault('display_errors', false)
+
+  try {
+    const response = await fetch(weatherApiUrl)
+    if (!response.ok) throw new Error(`Weather API returned ${response.status}`)
+
+    // weatherData can be any JSON-serializable shape, e.g.:
+    // { temperature: 18, description: 'Cloudy', unit: 'metric' }
+    const weatherData: WeatherData = await response.json()
+    writeEdgeAppCache('my-edge-app', 'weather', weatherData)
+    return weatherData
+  } catch (error) {
+    // When `display_errors` is on, the raw error always wins, by design, so
+    // operators can diagnose real problems instead of seeing stale data.
+    if (!displayErrors) {
+      return readEdgeAppCache<WeatherData>('my-edge-app', 'weather')
+    }
+    throw error
+  }
+}
+```
 
 ## Web Components
 

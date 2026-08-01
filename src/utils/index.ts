@@ -1,5 +1,6 @@
 export * from './calendar.js'
 export * from './error-handling.js'
+export * from './edge-app-cache.js'
 export * from './html.js'
 export * from './theme.js'
 export * from './locale.js'
