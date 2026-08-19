@@ -105,6 +105,10 @@ signalReady()
 - `setupBrandingLogo()` - Fetch and process branding logo
 - `setupBranding()` - Setup complete branding (colors and logo)
 
+### Color
+
+- `isLightColor(color)` - Check whether a color needs dark text on top of it
+
 ### Settings
 
 - `getSettings()` - Get all settings
@@ -200,6 +204,29 @@ async function loadWeather() {
   }
 }
 ```
+
+## Color Contrast
+
+Customers supply their own accent color through `screenly_color_accent`, so an
+app that paints anything on top of it cannot hardcode the text color. A pale
+brand needs dark text, a deep one needs light text.
+
+`isLightColor()` answers that question using the WCAG relative luminance
+formula, so hues are ranked the way an eye ranks them rather than by averaging
+raw channels. Pure yellow and pure blue have similar RGB totals but land on
+opposite sides of the threshold.
+
+```typescript
+import { isLightColor, setupTheme } from '@screenly/edge-apps'
+
+const { primary } = setupTheme()
+document.body.classList.toggle('on-light-brand', isLightColor(primary))
+```
+
+It accepts hex (`#abc`, `#aabbcc`, `#aabbccdd`) and numeric `rgb()` / `rgba()`
+strings, ignoring any alpha. Percentage channels and named colors are not
+supported. Anything it cannot parse returns `false`, so a malformed setting
+leaves an unattended screen rendering instead of throwing.
 
 ## Web Components
 
