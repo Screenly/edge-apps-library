@@ -18,9 +18,9 @@ Use an `rc` pre-release tag (e.g. `v1.2.3-rc.1`) before promoting to a stable re
 
 1. Bump the version in `package.json`.
 2. Commit the version bump and open a PR against `main`.
-3. Once merged, tag the release, replacing `vX.Y.Z` with the version from `package.json`:
+3. Once merged, tag the release, replacing `vX.Y.Z` with the version from `package.json`. Pass `-m` so `git tag -a` doesn't open an editor:
    ```sh
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m "vX.Y.Z"
    git push origin vX.Y.Z
    ```
 
