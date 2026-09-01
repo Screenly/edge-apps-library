@@ -9,13 +9,12 @@ const { screenlyJsContent } = createMockScreenlyForScreenshots()
 
 for (const { width, height } of RESOLUTIONS) {
   test(`screenshot ${width}x${height}`, async ({ browser }) => {
-    await captureScreenshot(
-      browser,
+    await captureScreenshot(browser, {
       width,
       height,
-      '{{APP_NAME}}',
+      filenamePrefix: '{{APP_NAME}}',
       screenlyJsContent,
-      async () => {},
-    )
+      setupMocks: async () => {},
+    })
   })
 }

@@ -224,6 +224,22 @@ export async function setupClockMock(
 }
 
 /**
+ * Options for {@link captureScreenshot}.
+ */
+export interface CaptureScreenshotOptions {
+  /** Viewport width */
+  width: number
+  /** Viewport height */
+  height: number
+  /** Prefix used for the output screenshot filename */
+  filenamePrefix: string
+  /** JavaScript content string for screenly.js mocking */
+  screenlyJsContent: string
+  /** Callback for app-specific route mocks, called before `page.goto()` */
+  setupMocks: (page: PlaywrightPage) => Promise<void>
+}
+
+/**
  * Captures a single screenshot at the given viewport size, handling the
  * common boilerplate shared across Edge App screenshot specs: browser
  * context/page setup, clock and screenly.js mocking, navigation, and
@@ -233,19 +249,17 @@ export async function setupClockMock(
  * in this helper) so Playwright reports the correct source location.
  *
  * @param browser - Playwright browser object
- * @param width - Viewport width
- * @param height - Viewport height
- * @param filenamePrefix - Prefix used for the output screenshot filename
- * @param screenlyJsContent - JavaScript content string for screenly.js mocking
- * @param setupMocks - Callback for app-specific route mocks, called before `page.goto()`
+ * @param options - Capture options
  */
 export async function captureScreenshot(
   browser: PlaywrightBrowser,
-  width: number,
-  height: number,
-  filenamePrefix: string,
-  screenlyJsContent: string,
-  setupMocks: (page: PlaywrightPage) => Promise<void>,
+  {
+    width,
+    height,
+    filenamePrefix,
+    screenlyJsContent,
+    setupMocks,
+  }: CaptureScreenshotOptions,
 ): Promise<void> {
   const screenshotsDir = getScreenshotsDir()
 
