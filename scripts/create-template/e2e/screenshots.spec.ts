@@ -14,7 +14,6 @@ for (const { width, height } of RESOLUTIONS) {
       height,
       filenamePrefix: '{{APP_NAME}}',
       screenlyJsContent,
-      setupMocks: async () => {},
     })
   })
 }

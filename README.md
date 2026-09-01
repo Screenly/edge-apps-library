@@ -348,8 +348,9 @@ afterEach(() => {
 context/page setup, clock and `screenly.js` mocking, navigation, and cleanup)
 that's otherwise duplicated across every resolution in an Edge App's e2e
 screenshot spec. Keep `test()` in your spec file so Playwright still reports
-the correct source location; pass app-specific route mocks through
-`setupMocks`.
+the correct source location; pass app-specific route mocks through the
+optional `setupMocks` callback, omitting it when there's nothing app-specific
+to mock.
 
 ```typescript
 import { test } from '@playwright/test'

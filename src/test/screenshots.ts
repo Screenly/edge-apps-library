@@ -30,12 +30,22 @@ interface PlaywrightRoute {
   fulfill(options: PlaywrightRouteFulfillOptions): Promise<void>
 }
 
-interface PlaywrightPage {
+interface PlaywrightRequest {
+  url(): string
+  method(): string
+}
+
+type PlaywrightRouteHandler = (
+  route: PlaywrightRoute,
+  request: PlaywrightRequest,
+) => Promise<void> | void
+
+interface PlaywrightRoutable {
+  route(url: string | RegExp, handler: PlaywrightRouteHandler): Promise<void>
+}
+
+interface PlaywrightPage extends PlaywrightRoutable {
   clock: { setFixedTime(time: Date | number | string): Promise<void> }
-  route(
-    url: string,
-    handler: (route: PlaywrightRoute) => Promise<void>,
-  ): Promise<void>
   goto(url: string): Promise<unknown>
   waitForLoadState(state: 'networkidle'): Promise<void>
   screenshot(options: { path: string; fullPage: boolean }): Promise<Buffer>
@@ -134,12 +144,7 @@ export interface OpenWeatherMocks {
  * @param mocks - Mock data for OpenWeather API endpoints
  */
 export async function setupOpenWeatherMocks(
-  page: {
-    route: (
-      url: string,
-      handler: (route: PlaywrightRoute) => Promise<void>,
-    ) => Promise<void>
-  },
+  page: PlaywrightRoutable,
   mocks: OpenWeatherMocks,
 ): Promise<void> {
   if (mocks.geocoding) {
@@ -188,12 +193,7 @@ export async function setupOpenWeatherMocks(
  * @param screenlyJsContent - JavaScript content string for screenly.js
  */
 export async function setupScreenlyJsMock(
-  page: {
-    route: (
-      url: string,
-      handler: (route: PlaywrightRoute) => Promise<void>,
-    ) => Promise<void>
-  },
+  page: PlaywrightRoutable,
   screenlyJsContent: string,
 ): Promise<void> {
   await page.route('/screenly.js?version=1', async (route) => {
@@ -236,7 +236,7 @@ export interface CaptureScreenshotOptions {
   /** JavaScript content string for screenly.js mocking */
   screenlyJsContent: string
   /** Callback for app-specific route mocks, called before `page.goto()` */
-  setupMocks: (page: PlaywrightPage) => Promise<void>
+  setupMocks?: (page: PlaywrightPage) => Promise<void> | void
 }
 
 /**
@@ -258,7 +258,7 @@ export async function captureScreenshot(
     height,
     filenamePrefix,
     screenlyJsContent,
-    setupMocks,
+    setupMocks = async () => {},
   }: CaptureScreenshotOptions,
 ): Promise<void> {
   const screenshotsDir = getScreenshotsDir()
