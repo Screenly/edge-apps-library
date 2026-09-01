@@ -342,6 +342,43 @@ afterEach(() => {
 })
 ```
 
+### Screenshot Testing
+
+`captureScreenshot()` consolidates the Playwright boilerplate (browser
+context/page setup, clock and `screenly.js` mocking, navigation, and cleanup)
+that's otherwise duplicated across every resolution in an Edge App's e2e
+screenshot spec. Keep `test()` in your spec file so Playwright still reports
+the correct source location; pass app-specific route mocks through the
+optional `setupMocks` callback, omitting it when there's nothing app-specific
+to mock.
+
+```typescript
+import { test } from '@playwright/test'
+import {
+  captureScreenshot,
+  createMockScreenlyForScreenshots,
+  RESOLUTIONS,
+} from '@screenly/edge-apps/test/screenshots'
+
+const { screenlyJsContent } = createMockScreenlyForScreenshots()
+
+for (const { width, height } of RESOLUTIONS) {
+  test(`screenshot ${width}x${height}`, async ({ browser }) => {
+    await captureScreenshot(browser, {
+      width,
+      height,
+      filenamePrefix: 'my-edge-app',
+      screenlyJsContent,
+      setupMocks: async (page) => {
+        await page.route('**/api**', async (route) => {
+          await route.fulfill({ status: 200, body: '{}' })
+        })
+      },
+    })
+  })
+}
+```
+
 ## Types
 
 ```typescript
