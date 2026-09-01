@@ -250,19 +250,25 @@ export async function captureScreenshot(
   const screenshotsDir = getScreenshotsDir()
 
   const context = await browser.newContext({ viewport: { width, height } })
-  const page = await context.newPage()
 
-  await setupClockMock(page)
-  await setupScreenlyJsMock(page, screenlyJsContent)
-  await setupMocks(page)
+  try {
+    const page = await context.newPage()
 
-  await page.goto('/')
-  await page.waitForLoadState('networkidle')
+    await setupClockMock(page)
+    await setupScreenlyJsMock(page, screenlyJsContent)
+    await setupMocks(page)
 
-  await page.screenshot({
-    path: path.join(screenshotsDir, `${filenamePrefix}-${width}x${height}.png`),
-    fullPage: false,
-  })
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
 
-  await context.close()
+    await page.screenshot({
+      path: path.join(
+        screenshotsDir,
+        `${filenamePrefix}-${width}x${height}.png`,
+      ),
+      fullPage: false,
+    })
+  } finally {
+    await context.close()
+  }
 }
