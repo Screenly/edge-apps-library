@@ -4,7 +4,7 @@
 
 ### Versioning
 
-This project follows [Calendar Versioning](https://calver.org/) using a `YY.M.PATCH` scheme (e.g. `v26.8.0`), a SemVer-compatible variant of CalVer. npm requires `package.json` versions to be valid [SemVer](https://semver.org/), which disallows leading zeros in numeric identifiers, so `YY` is the two-digit year, `M` is the non-zero-padded month, and `PATCH` resets to `0` for the first release of a given year/month and increments for subsequent releases within that same month. Git tags are always `v`-prefixed (e.g. `v26.8.0`). Pre-release tags use the format `v26.8.0-rc.1`.
+This project follows [Calendar Versioning](https://calver.org/) using a `YY.M.PATCH` scheme (e.g. `v26.8.0`), a SemVer-compatible variant of CalVer. npm requires `package.json` versions to be valid [SemVer](https://semver.org/), which disallows leading zeros in numeric identifiers, so `YY` is the last two digits of the year as a non-zero-padded number (e.g. `26` for 2026), `M` is the non-zero-padded month, and `PATCH` resets to `0` for the first release of a given year/month and increments for subsequent releases within that same month. Git tags are always `v`-prefixed (e.g. `v26.8.0`). Pre-release tags use the format `v26.8.0-rc.1`.
 
 | Change type                                | Example               |
 | ------------------------------------------- | --------------------- |
