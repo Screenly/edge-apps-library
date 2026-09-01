@@ -30,6 +30,28 @@ interface PlaywrightRoute {
   fulfill(options: PlaywrightRouteFulfillOptions): Promise<void>
 }
 
+interface PlaywrightPage {
+  clock: { setFixedTime(time: Date | number | string): Promise<void> }
+  route(
+    url: string,
+    handler: (route: PlaywrightRoute) => Promise<void>,
+  ): Promise<void>
+  goto(url: string): Promise<unknown>
+  waitForLoadState(state: 'networkidle'): Promise<void>
+  screenshot(options: { path: string; fullPage: boolean }): Promise<Buffer>
+}
+
+interface PlaywrightBrowserContext {
+  newPage(): Promise<PlaywrightPage>
+  close(): Promise<void>
+}
+
+interface PlaywrightBrowser {
+  newContext(options: {
+    viewport: { width: number; height: number }
+  }): Promise<PlaywrightBrowserContext>
+}
+
 /**
  * Standard resolutions for screenshot testing
  * Covers all supported Screenly player resolutions
@@ -199,4 +221,48 @@ export async function setupClockMock(
   date: Date | number | string = FIXED_SCREENSHOT_DATE,
 ): Promise<void> {
   await page.clock.setFixedTime(date)
+}
+
+/**
+ * Captures a single screenshot at the given viewport size, handling the
+ * common boilerplate shared across Edge App screenshot specs: browser
+ * context/page setup, clock and screenly.js mocking, navigation, and
+ * cleanup. App-specific route mocks are supplied via `setupMocks`.
+ *
+ * Callers should keep `test()` in their spec files (rather than wrapping it
+ * in this helper) so Playwright reports the correct source location.
+ *
+ * @param browser - Playwright browser object
+ * @param width - Viewport width
+ * @param height - Viewport height
+ * @param filenamePrefix - Prefix used for the output screenshot filename
+ * @param screenlyJsContent - JavaScript content string for screenly.js mocking
+ * @param setupMocks - Callback for app-specific route mocks, called before `page.goto()`
+ */
+export async function captureScreenshot(
+  browser: PlaywrightBrowser,
+  width: number,
+  height: number,
+  filenamePrefix: string,
+  screenlyJsContent: string,
+  setupMocks: (page: PlaywrightPage) => Promise<void>,
+): Promise<void> {
+  const screenshotsDir = getScreenshotsDir()
+
+  const context = await browser.newContext({ viewport: { width, height } })
+  const page = await context.newPage()
+
+  await setupClockMock(page)
+  await setupScreenlyJsMock(page, screenlyJsContent)
+  await setupMocks(page)
+
+  await page.goto('/')
+  await page.waitForLoadState('networkidle')
+
+  await page.screenshot({
+    path: path.join(screenshotsDir, `${filenamePrefix}-${width}x${height}.png`),
+    fullPage: false,
+  })
+
+  await context.close()
 }
