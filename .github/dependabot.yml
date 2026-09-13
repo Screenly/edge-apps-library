@@ -13,6 +13,14 @@ updates:
         patterns:
           - '*'
 
+    ignore:
+      # typescript-eslint has no released version that supports TypeScript 7 -- even 8.70.0
+      # declares a peer range of `typescript >=4.8.4 <6.1.0`. Installing TS 7 alongside it
+      # makes `npm ci` fail with ERESOLVE, which takes down every CI job in this repo.
+      # Drop this entry once typescript-eslint ships TypeScript 7 support.
+      - dependency-name: 'typescript'
+        versions: ['>=7']
+
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
