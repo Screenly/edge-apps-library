@@ -3,9 +3,14 @@ import type { ErrorEvent } from '@sentry/browser'
 import { getHostname } from './metadata.js'
 import { getSetting, getSettings } from './settings.js'
 
-const SENSITIVE_KEY_PATTERNS = ['token', 'secret', 'password', 'credential']
+export const SENSITIVE_KEY_PATTERNS = [
+  'token',
+  'secret',
+  'password',
+  'credential',
+]
 
-function isSensitiveKey(key: string): boolean {
+export function isSensitiveKey(key: string): boolean {
   const lowerKey = key.toLowerCase()
   return SENSITIVE_KEY_PATTERNS.some((pattern) => lowerKey.includes(pattern))
 }
