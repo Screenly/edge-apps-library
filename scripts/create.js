@@ -1,60 +1,9 @@
 import fs from 'fs'
 import path from 'path'
+import { toTitleCase, walkTextFiles, replaceInFile } from './template-utils.js'
+import { parseCreateArgs, scaffoldNewApp } from './create-scaffold.js'
 
-const TEXT_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.html',
-  '.css',
-  '.scss',
-  '.json',
-  '.yml',
-  '.yaml',
-  '.md',
-  '.txt',
-  '.svg',
-  '.gitignore',
-  '.ignore',
-])
-
-const SKIP_DIRS = new Set(['node_modules', 'dist', '.git'])
-
-function toTitleCase(kebab) {
-  return kebab
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
-function walkTextFiles(dir) {
-  const results = []
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) results.push(...walkTextFiles(fullPath))
-    } else if (
-      entry.isFile() &&
-      (TEXT_EXTENSIONS.has(path.extname(entry.name)) ||
-        TEXT_EXTENSIONS.has(entry.name))
-    ) {
-      results.push(fullPath)
-    }
-  }
-  return results
-}
-
-function replaceInFile(filePath, replacements) {
-  const original = fs.readFileSync(filePath, 'utf-8')
-  const updated = Object.entries(replacements).reduce(
-    (src, [placeholder, value]) => src.replaceAll(placeholder, value),
-    original,
-  )
-  if (updated !== original) fs.writeFileSync(filePath, updated, 'utf-8')
-}
-
-export async function createCommand(_args) {
+function initializeExistingProject() {
   const projectRoot = process.cwd()
   const pkgPath = path.join(projectRoot, 'package.json')
 
@@ -64,7 +13,9 @@ export async function createCommand(_args) {
   } catch (error) {
     console.error(
       `Failed to read or parse package.json at ${pkgPath}. ` +
-        'Make sure you are running this command from an Edge App project root.',
+        'Make sure you are running this command from an Edge App project root, ' +
+        'or pass a directory name to scaffold a new Edge App: ' +
+        'npx @screenly/edge-apps create <directory> (or bunx @screenly/edge-apps create <directory>)',
     )
     if (error instanceof Error && error.message) {
       console.error(`Details: ${error.message}`)
@@ -93,7 +44,7 @@ export async function createCommand(_args) {
     replaceInFile(filePath, replacements)
   }
 
-  const updatedPkg = { ...pkg }
+  const updatedPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
   delete updatedPkg['bun-create']
   fs.writeFileSync(pkgPath, JSON.stringify(updatedPkg, null, 2) + '\n', 'utf-8')
 
@@ -112,4 +63,39 @@ Next steps:
   4. Deploy when ready:
        npm run deploy
 `)
+}
+
+function hasScaffoldOnlyOptions(options) {
+  return (
+    options.description !== null ||
+    options.author !== null ||
+    options.pm !== null ||
+    options.force ||
+    options.skipInstall
+  )
+}
+
+export async function createCommand(args) {
+  const { directory, options, error } = parseCreateArgs(args)
+
+  if (error) {
+    console.error(error)
+    process.exitCode = 1
+    return
+  }
+
+  if (!directory && hasScaffoldOnlyOptions(options)) {
+    console.error(
+      'Options like --description/--author/--pm/--force/--skip-install only apply ' +
+        'when scaffolding a new app: npx @screenly/edge-apps create <directory>',
+    )
+    process.exitCode = 1
+    return
+  }
+
+  if (directory) {
+    scaffoldNewApp(directory, options)
+  } else {
+    initializeExistingProject()
+  }
 }

@@ -1,0 +1,17 @@
+---
+syntax: manifest_v1
+description: '{{APP_DESCRIPTION_YAML}}'
+ready_signal: true
+settings:
+  message:
+    type: string
+    default_value: 'Hello, Screenly!'
+    title: Message
+    optional: true
+    help_text: The message displayed on screen.
+  sentry_dsn:
+    type: secret
+    title: Sentry Client Key
+    optional: true
+    help_text: Sentry Client Key from Sentry SDK for error capturing.
+    is_global: true

@@ -1,0 +1,27 @@
+{
+  "name": "{{APP_NAME}}",
+  "version": "0.1.0",
+  "description": "{{APP_DESCRIPTION_JSON}}",
+  "type": "module",
+  "scripts": {
+    "prebuild": "{{PM_RUN}} type-check",
+    "generate-mock-data": "screenly edge-app run --generate-mock-data",
+    "predev": "{{PM_RUN}} generate-mock-data",
+    "cors-proxy-server": "edge-apps-scripts cors-proxy",
+    "dev": "run-p cors-proxy-server edge-apps-dev",
+    "edge-apps-dev": "edge-apps-scripts dev",
+    "build": "edge-apps-scripts build",
+    "build:dev": "edge-apps-scripts build:dev",
+    "build:prod": "edge-apps-scripts build",
+    "test": "",
+    "test:unit": "",
+    "lint": "edge-apps-scripts lint --fix",
+    "format": "prettier --write src/ README.md index.html",
+    "format:check": "prettier --check src/ README.md index.html",
+    "deploy": "{{PM_RUN}} build && screenly edge-app deploy --path=dist/",
+    "type-check": "edge-apps-scripts type-check",
+    "screenshots": "edge-apps-scripts screenshots"
+  },
+  "prettier": "./.prettierrc.json",
+  "devDependencies": {}
+}
