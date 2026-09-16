@@ -30,6 +30,38 @@ interface PlaywrightRoute {
   fulfill(options: PlaywrightRouteFulfillOptions): Promise<void>
 }
 
+interface PlaywrightRequest {
+  url(): string
+  method(): string
+}
+
+type PlaywrightRouteHandler = (
+  route: PlaywrightRoute,
+  request: PlaywrightRequest,
+) => Promise<void> | void
+
+interface PlaywrightRoutable {
+  route(url: string | RegExp, handler: PlaywrightRouteHandler): Promise<void>
+}
+
+interface PlaywrightPage extends PlaywrightRoutable {
+  clock: { setFixedTime(time: Date | number | string): Promise<void> }
+  goto(url: string): Promise<unknown>
+  waitForLoadState(state: 'networkidle'): Promise<void>
+  screenshot(options: { path: string; fullPage: boolean }): Promise<Buffer>
+}
+
+interface PlaywrightBrowserContext {
+  newPage(): Promise<PlaywrightPage>
+  close(): Promise<void>
+}
+
+interface PlaywrightBrowser {
+  newContext(options: {
+    viewport: { width: number; height: number }
+  }): Promise<PlaywrightBrowserContext>
+}
+
 /**
  * Standard resolutions for screenshot testing
  * Covers all supported Screenly player resolutions
@@ -112,12 +144,7 @@ export interface OpenWeatherMocks {
  * @param mocks - Mock data for OpenWeather API endpoints
  */
 export async function setupOpenWeatherMocks(
-  page: {
-    route: (
-      url: string,
-      handler: (route: PlaywrightRoute) => Promise<void>,
-    ) => Promise<void>
-  },
+  page: PlaywrightRoutable,
   mocks: OpenWeatherMocks,
 ): Promise<void> {
   if (mocks.geocoding) {
@@ -166,12 +193,7 @@ export async function setupOpenWeatherMocks(
  * @param screenlyJsContent - JavaScript content string for screenly.js
  */
 export async function setupScreenlyJsMock(
-  page: {
-    route: (
-      url: string,
-      handler: (route: PlaywrightRoute) => Promise<void>,
-    ) => Promise<void>
-  },
+  page: PlaywrightRoutable,
   screenlyJsContent: string,
 ): Promise<void> {
   await page.route('/screenly.js?version=1', async (route) => {
@@ -199,4 +221,68 @@ export async function setupClockMock(
   date: Date | number | string = FIXED_SCREENSHOT_DATE,
 ): Promise<void> {
   await page.clock.setFixedTime(date)
+}
+
+/**
+ * Options for {@link captureScreenshot}.
+ */
+export interface CaptureScreenshotOptions {
+  /** Viewport width */
+  width: number
+  /** Viewport height */
+  height: number
+  /** Prefix used for the output screenshot filename */
+  filenamePrefix: string
+  /** JavaScript content string for screenly.js mocking */
+  screenlyJsContent: string
+  /** Callback for app-specific route mocks, called before `page.goto()` */
+  setupMocks?: (page: PlaywrightPage) => Promise<void> | void
+}
+
+/**
+ * Captures a single screenshot at the given viewport size, handling the
+ * common boilerplate shared across Edge App screenshot specs: browser
+ * context/page setup, clock and screenly.js mocking, navigation, and
+ * cleanup. App-specific route mocks are supplied via `setupMocks`.
+ *
+ * Callers should keep `test()` in their spec files (rather than wrapping it
+ * in this helper) so Playwright reports the correct source location.
+ *
+ * @param browser - Playwright browser object
+ * @param options - Capture options
+ */
+export async function captureScreenshot(
+  browser: PlaywrightBrowser,
+  {
+    width,
+    height,
+    filenamePrefix,
+    screenlyJsContent,
+    setupMocks = async () => {},
+  }: CaptureScreenshotOptions,
+): Promise<void> {
+  const screenshotsDir = getScreenshotsDir()
+
+  const context = await browser.newContext({ viewport: { width, height } })
+
+  try {
+    const page = await context.newPage()
+
+    await setupClockMock(page)
+    await setupScreenlyJsMock(page, screenlyJsContent)
+    await setupMocks(page)
+
+    await page.goto('/')
+    await page.waitForLoadState('networkidle')
+
+    await page.screenshot({
+      path: path.join(
+        screenshotsDir,
+        `${filenamePrefix}-${width}x${height}.png`,
+      ),
+      fullPage: false,
+    })
+  } finally {
+    await context.close()
+  }
 }

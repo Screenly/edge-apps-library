@@ -1,5 +1,7 @@
 export * from './calendar.js'
+export * from './color.js'
 export * from './error-handling.js'
+export * from './edge-app-cache.js'
 export * from './html.js'
 export * from './http.js'
 export * from './theme.js'
