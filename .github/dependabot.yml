@@ -12,6 +12,16 @@ updates:
       npm:
         patterns:
           - '*'
+    # typescript-eslint has no release that accepts TypeScript >= 6.1 (the peer
+    # range on 8.x is '>=4.8.4 <6.1.0'), and it is what `edge-apps-scripts lint`
+    # runs on. A major TypeScript bump therefore lands as an npm ERESOLVE here,
+    # and as a `TypeError: Cannot read properties of undefined (reading 'Cjs')`
+    # in every edge app that installs this package. Hold majors until
+    # typescript-eslint ships support; minors and patches still flow.
+    ignore:
+      - dependency-name: 'typescript'
+        update-types:
+          - 'version-update:semver-major'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
