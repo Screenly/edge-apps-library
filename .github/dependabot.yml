@@ -12,6 +12,12 @@ updates:
       npm:
         patterns:
           - '*'
+    ignore:
+      # typescript-eslint 8.x declares peer typescript '>=4.8.4 <6.1.0'; TypeScript 7
+      # makes `npm ci` fail with ERESOLVE. Remove once typescript-eslint supports it.
+      - dependency-name: 'typescript'
+        versions:
+          - '>=7'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
