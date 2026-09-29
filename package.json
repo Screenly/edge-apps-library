@@ -60,6 +60,7 @@
     "eslint.config.ts",
     "tsconfig.json",
     "vite.config.ts",
+    ".prettierrc.json",
     "src/styles",
     "src/assets"
   ],
@@ -103,6 +104,7 @@
     "jiti": "^2.6.1",
     "jsdom": "^28.1.0",
     "offline-geocode-city": "^1.0.2",
+    "prettier": "^3.8.1",
     "panic-overlay": "^1.0.51",
     "sharp": "^0.35.3",
     "tailwindcss": "^4.2.1",
