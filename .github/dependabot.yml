@@ -8,6 +8,13 @@ updates:
       - '/'
     schedule:
       interval: 'weekly'
+    ignore:
+      # typescript-eslint declares a peer range of typescript ">=4.8.4 <6.1.0",
+      # and its latest release still does. Bumping typescript to 7 makes
+      # `npm ci` fail outright with ERESOLVE, which takes every job with it.
+      # Remove this once typescript-eslint supports TypeScript 7.
+      - dependency-name: 'typescript'
+        versions: ['>=7']
     groups:
       npm:
         patterns:
