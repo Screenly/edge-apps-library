@@ -15,9 +15,7 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 
 type CalendarViewElement =
-  | WeeklyCalendarView
-  | DailyCalendarView
-  | ScheduleCalendarView
+  WeeklyCalendarView | DailyCalendarView | ScheduleCalendarView
 
 const EVENTS_REFRESH_INTERVAL = 10_000
 const NOW_TICK_INTERVAL = 30_000
