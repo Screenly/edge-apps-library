@@ -64,6 +64,9 @@ export default defineConfig({
           return 'assets/[name]-[hash][extname]'
         },
       },
+      transform: {
+        define: { 'import.meta': '{}' },
+      },
     },
   },
   plugins: [tailwindcss(), screenlyDevServer(), copyScreenlyFiles()],
