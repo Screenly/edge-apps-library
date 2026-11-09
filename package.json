@@ -131,6 +131,7 @@
   "overrides": {
     "@jsheaven/easybuild": {
       "esbuild": "0.25.12"
-    }
+    },
+    "csv-parse": "^7.0.2"
   }
 }
