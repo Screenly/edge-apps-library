@@ -113,6 +113,10 @@ describe('handleConfigRequest refusals', () => {
   test.each([
     ['a form post', { 'content-type': 'text/plain' }],
     [
+      'a client without an Origin header',
+      { 'content-type': 'application/json' },
+    ],
+    [
       'another origin',
       { 'content-type': 'application/json', origin: 'https://example.com' },
     ],
@@ -132,6 +136,7 @@ describe('handleConfigRequest refusals', () => {
     handleConfigRequest(
       request('POST', JSON.stringify({ settings: { theme: 'dark' } }), {
         'content-type': 'application/json',
+        origin: 'http://localhost:5173',
       }),
       res,
       context,

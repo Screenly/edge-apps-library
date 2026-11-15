@@ -173,12 +173,13 @@ export function readBody(req: IncomingMessage): Promise<string> {
 /**
  * Block cross-site writes: browsers send a preflight for JSON bodies, and a
  * page on another origin can't make its Origin match this server's host.
+ * Browsers always send Origin on a POST, so a request without one is refused.
  */
 export function isSameOriginJsonRequest(req: IncomingMessage): boolean {
   const contentType = req.headers['content-type'] ?? ''
   if (!contentType.toLowerCase().startsWith('application/json')) return false
   const origin = req.headers.origin
-  if (!origin) return true
+  if (!origin) return false
   try {
     return new URL(origin).host === req.headers.host
   } catch {

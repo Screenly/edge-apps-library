@@ -161,7 +161,7 @@ The panel uses two endpoints that exist only while `npm run dev` runs.
 
 `type` is the manifest type (`string` or `secret`) and `input` the editor type from `help_text.properties.type`. `values` holds what the app gets as `screenly.settings`: manifest defaults with `mock-data.yml` on top, always as strings. A blank value in `mock-data.yml` reaches the app as `''`, not `null`.
 
-`POST /__screenly/config` takes `{ "settings": { ... }, "metadata": { ... } }`, merges it into `mock-data.yml` and returns the same shape as `GET`. Only settings declared in `screenly.yml` are accepted, as strings. Metadata accepts `screen_name`, `hostname`, `location`, `coordinates` (`[latitude, longitude]`) and `tags`. Anything else gets a 400. The request must be JSON from the dev server's own origin, otherwise it gets a 403.
+`POST /__screenly/config` takes `{ "settings": { ... }, "metadata": { ... } }`, merges it into `mock-data.yml` and returns the same shape as `GET`. Only settings declared in `screenly.yml` are accepted, as strings. Metadata accepts `screen_name`, `hostname`, `location`, `coordinates` (`[latitude, longitude]`) and `tags`. Anything else gets a 400. The request must be JSON with an `Origin` header for the dev server's own origin, otherwise it gets a 403.
 
 The dev server's `screenly.js` keeps its state on `window.__screenlyDevServer`: `readyAt`, `readyCalls`, `abortAt`, `abortCalls` and `network`. It dispatches `screenly:ready` and `screenly:abort` events on `window` the first time the app sends each signal.
 
