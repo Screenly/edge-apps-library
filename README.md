@@ -275,6 +275,8 @@ Start the Vite development server with mock data from `screenly.yml` and `mock-d
 npm run dev
 ```
 
+The dev server adds a dev tools panel to the page (press `D` to toggle it). It edits the app's settings and screen metadata, writing them to `mock-data.yml` and reloading the page, shows when the app sent its ready signal, and can simulate an offline network. See [`<edge-app-devtools>`](docs/components.md#edge-app-devtools) for details.
+
 #### Building
 
 ```bash
