@@ -1,7 +1,13 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import './dev-tools'
 import type { EdgeAppDevToolsElement } from './dev-tools'
-import { describeReadySignal, NETWORK_STORAGE_KEY } from './dev-server-panel'
+import {
+  describeReadySignal,
+  describeSkipSignal,
+  NETWORK_STORAGE_KEY,
+  PLAYER_STORAGE_KEY,
+  type ScreenlyDevServerState,
+} from './dev-server-panel'
 import type { DevServerConfig } from './settings-form'
 
 const config: DevServerConfig = {
@@ -65,21 +71,40 @@ async function mountWithDevServer(): Promise<EdgeAppDevToolsElement> {
   return element
 }
 
+const idle: ScreenlyDevServerState = {
+  readyAt: null,
+  readyCalls: 0,
+  abortAt: null,
+  abortCalls: 0,
+  network: 'online',
+  player: 'current',
+}
+
 describe('describeReadySignal', () => {
   test.each([
-    [undefined, true, 'unknown'],
-    [{ readyAt: 812, readyCalls: 1 }, true, 'fired at 812 ms'],
-    [{ readyAt: 812, readyCalls: 3 }, true, 'fired at 812 ms (3 calls)'],
-    [{ readyAt: null, readyCalls: 0 }, true, 'not called yet'],
-    [
-      { readyAt: null, readyCalls: 0 },
-      false,
-      'not called (ready_signal is off)',
-    ],
-  ] as const)('%j with ready_signal %s', (state, expected, text) => {
+    [undefined, true, 'Unknown', 'neutral'],
+    [{ readyAt: 812, readyCalls: 1 }, true, '812 ms', 'success'],
+    [{ readyAt: 812, readyCalls: 3 }, true, '812 ms · 3 calls', 'success'],
+    [{}, true, 'Waiting', 'neutral'],
+    [{}, false, 'Not used', 'neutral'],
+  ] as const)('%j with ready_signal %s', (state, expected, text, tone) => {
     expect(
-      describeReadySignal(state && { ...state, network: 'online' }, expected),
-    ).toBe(text)
+      describeReadySignal(state && { ...idle, ...state }, expected),
+    ).toEqual({ text, tone })
+  })
+})
+
+describe('describeSkipSignal', () => {
+  test.each([
+    [undefined, 'Unknown', 'neutral'],
+    [{}, 'Not called', 'neutral'],
+    [{ abortAt: 1500, abortCalls: 1 }, 'Skipped · 1500 ms', 'warning'],
+    [{ player: 'legacy' }, 'Not available', 'neutral'],
+  ] as const)('%j', (state, text, tone) => {
+    expect(describeSkipSignal(state && { ...idle, ...state })).toEqual({
+      text,
+      tone,
+    })
   })
 })
 
@@ -88,11 +113,7 @@ let fetchMock: ReturnType<typeof vi.fn>
 function useDevServerMocks() {
   beforeEach(() => {
     sessionStorage.clear()
-    window.__screenlyDevServer = {
-      readyAt: null,
-      readyCalls: 0,
-      network: 'online',
-    }
+    window.__screenlyDevServer = { ...idle }
     fetchMock = vi.fn((_url: string, init?: RequestInit) =>
       init?.method === 'POST'
         ? jsonResponse({ error: 'Unknown setting: x.' }, 400)
@@ -124,7 +145,7 @@ describe('<edge-app-devtools> settings form', () => {
     ])
     expect(groups).toEqual([
       ['Settings', true],
-      ['Advanced settings', false],
+      ['Advanced', false],
       ['Screen metadata', false],
     ])
     expect(
@@ -157,42 +178,60 @@ describe('<edge-app-devtools> settings form', () => {
   })
 })
 
+// eslint-disable-next-line max-lines-per-function
 describe('<edge-app-devtools> dev server status and controls', () => {
   useDevServerMocks()
 
-  test('updates the ready signal status when the app signals', async () => {
-    const element = await mountWithDevServer()
-    const status = element.shadowRoot!.querySelector('.ready-status')!
-    expect(status.textContent).toBe('not called yet')
-
-    window.__screenlyDevServer!.readyAt = 640
-    window.__screenlyDevServer!.readyCalls = 1
-    window.dispatchEvent(new CustomEvent('screenly:ready'))
-    expect(status.textContent).toBe('fired at 640 ms')
-  })
-
-  test('shows a badge while the network simulator is on', async () => {
-    window.__screenlyDevServer!.network = 'offline'
+  test('updates the signal status when the app signals', async () => {
     const element = await mountWithDevServer()
     const root = element.shadowRoot!
-    expect(root.querySelector<HTMLElement>('.badge')!.hidden).toBe(false)
-    expect(
-      root.querySelector<HTMLSelectElement>('#devtools-network')!.value,
-    ).toBe('offline')
+    const ready = root.querySelector<HTMLElement>('.ready-status')!
+    const skip = root.querySelector<HTMLElement>('.skip-status')!
+    expect(ready.textContent).toBe('Waiting')
+    expect(skip.textContent).toBe('Not called')
+
+    Object.assign(window.__screenlyDevServer!, { readyAt: 640, readyCalls: 1 })
+    window.dispatchEvent(new CustomEvent('screenly:ready'))
+    expect(ready.textContent).toBe('640 ms')
+    expect(ready.dataset.tone).toBe('success')
+
+    Object.assign(window.__screenlyDevServer!, { abortAt: 900, abortCalls: 1 })
+    window.dispatchEvent(new CustomEvent('screenly:abort'))
+    expect(skip.textContent).toBe('Skipped · 900 ms')
+    expect(skip.dataset.tone).toBe('warning')
   })
 
-  test('stores the network mode for the next page load', async () => {
+  test('shows badges for the simulated network and player', async () => {
+    Object.assign(window.__screenlyDevServer!, {
+      network: 'offline',
+      player: 'legacy',
+    })
     const element = await mountWithDevServer()
-    const select =
-      element.shadowRoot!.querySelector<HTMLSelectElement>('#devtools-network')!
-    select.value = 'hang'
+    const root = element.shadowRoot!
+    expect(
+      [...root.querySelectorAll('.badge')].map((badge) => badge.textContent),
+    ).toEqual(['offline', 'older player'])
+    const checked = [
+      ...root.querySelectorAll<HTMLInputElement>('input[type="radio"]:checked'),
+    ].map((input) => input.value)
+    expect(checked).toEqual(['offline', 'legacy'])
+  })
+
+  test.each([
+    ['network', 'hang', NETWORK_STORAGE_KEY],
+    ['player', 'legacy', PLAYER_STORAGE_KEY],
+  ])('stores the %s mode for the next page load', async (name, value, key) => {
+    const element = await mountWithDevServer()
+    const radio = element.shadowRoot!.querySelector<HTMLInputElement>(
+      `input[name="${name}"][value="${value}"]`,
+    )!
     // jsdom can't reload; the mode must be stored before it tries to.
     try {
-      select.dispatchEvent(new Event('change'))
+      radio.click()
     } catch {
       // ignore jsdom's "not implemented" navigation error
     }
-    expect(sessionStorage.getItem(NETWORK_STORAGE_KEY)).toBe('hang')
+    expect(sessionStorage.getItem(key)).toBe(value)
   })
 
   test('the D key toggles the panel, except while typing', async () => {
@@ -221,6 +260,7 @@ describe('<edge-app-devtools> dev server status and controls', () => {
       true,
     )
     expect(button.getAttribute('aria-expanded')).toBe('false')
+    expect(button.getAttribute('aria-label')).toBe('Expand dev tools')
 
     button.click()
     expect(root.querySelector<HTMLElement>('.info-panel__body')!.hidden).toBe(

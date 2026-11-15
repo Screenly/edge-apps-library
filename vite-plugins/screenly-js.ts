@@ -1,21 +1,25 @@
 import type { BaseScreenlyMockData } from './screenly-config.ts'
 
-/**
- * Build the dev server's screenly.js. Besides `window.screenly`, it records
- * when the app calls `signalReadyForRendering()` and, when the dev tools
- * network simulator is on, replaces `fetch` for cross-origin requests.
- */
-export function generateScreenlyObject(config: BaseScreenlyMockData): string {
-  return `
-    // Generated screenly.js for development mode
+// Dev tools state, read from sessionStorage, plus the network simulator.
+const DEV_SERVER_STATE = `
     window.__screenlyDevServer = (function () {
-      var state = { readyAt: null, readyCalls: 0, network: 'online' }
-      var mode = null
-      try {
-        mode = window.sessionStorage.getItem('screenly-devtools:network')
-      } catch (error) {}
-      if (mode !== 'offline' && mode !== 'hang') return state
-      state.network = mode
+      var read = function (key) {
+        try {
+          return window.sessionStorage.getItem(key)
+        } catch (error) {
+          return null
+        }
+      }
+      var mode = read('screenly-devtools:network')
+      var state = {
+        readyAt: null,
+        readyCalls: 0,
+        abortAt: null,
+        abortCalls: 0,
+        network: mode === 'offline' || mode === 'hang' ? mode : 'online',
+        player: read('screenly-devtools:player') === 'legacy' ? 'legacy' : 'current'
+      }
+      if (state.network === 'online') return state
 
       // Simulate a device without a network: cross-origin requests fail,
       // while the app's own files and the dev server keep working.
@@ -49,9 +53,39 @@ export function generateScreenlyObject(config: BaseScreenlyMockData): string {
       }
       return state
     })()
+`
 
+// signalAbort() exists on ScreenlyOS 26.9+ only, so it is optional here too.
+const SIGNAL_ABORT = `
+    if (window.__screenlyDevServer.player === 'current') {
+      // On a device the player moves on to the next playlist item.
+      window.screenly.signalAbort = function () {
+        var state = window.__screenlyDevServer
+        state.abortCalls += 1
+        if (state.abortAt === null) {
+          state.abortAt = Math.round(performance.now())
+          console.info('[dev server] The app asked the player to skip it (signalAbort).')
+          window.dispatchEvent(new CustomEvent('screenly:abort', { detail: { abortAt: state.abortAt } }))
+        }
+      }
+    }
+`
+
+/**
+ * Build the dev server's screenly.js. Besides `window.screenly`, it records
+ * when the app calls `signalReadyForRendering()` and `signalAbort()`, and,
+ * when the dev tools network simulator is on, replaces `fetch` for
+ * cross-origin requests.
+ *
+ * `signalAbort()` exists on ScreenlyOS 26.9 and later only, so it is left
+ * out when the dev tools simulate an older player or a browser.
+ */
+export function generateScreenlyObject(config: BaseScreenlyMockData): string {
+  return `
+    // Generated screenly.js for development mode
+${DEV_SERVER_STATE}
     window.screenly = {
-      signalReadyForRendering: () => {
+      signalReadyForRendering: function () {
         var state = window.__screenlyDevServer
         state.readyCalls += 1
         if (state.readyAt === null) {
@@ -63,5 +97,7 @@ export function generateScreenlyObject(config: BaseScreenlyMockData): string {
       settings: ${JSON.stringify(config.settings, null, 2)},
       cors_proxy_url: ${JSON.stringify(config.cors_proxy_url)}
     }
+
+${SIGNAL_ABORT}
   `
 }

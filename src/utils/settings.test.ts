@@ -7,6 +7,7 @@ import {
   getTheme,
   getCorsProxyUrl,
   signalReady,
+  signalAbort,
 } from './settings'
 import { setupScreenlyMock, resetScreenlyMock } from '../test/mock'
 
@@ -198,6 +199,22 @@ describe('settings utilities', () => {
       signalReady()
 
       expect(mockFn).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('signalAbort', () => {
+    test('asks the player to skip the app when it can', () => {
+      const mockFn = vi.fn(() => {})
+      screenly.signalAbort = mockFn
+
+      expect(signalAbort()).toBe(true)
+      expect(mockFn).toHaveBeenCalledTimes(1)
+    })
+
+    test('returns false on players without signalAbort', () => {
+      delete screenly.signalAbort
+
+      expect(signalAbort()).toBe(false)
     })
   })
 })

@@ -10,6 +10,8 @@ import {
 } from './settings-form.js'
 
 export type NetworkMode = 'online' | 'offline' | 'hang'
+/** `current`: ScreenlyOS 26.9+ with `signalAbort()`; `legacy`: without it */
+export type PlayerMode = 'current' | 'legacy'
 
 /**
  * State the dev server's screenly.js keeps on `window.__screenlyDevServer`.
@@ -18,7 +20,11 @@ export interface ScreenlyDevServerState {
   /** ms after navigation start of the first `signalReadyForRendering()` call */
   readyAt: number | null
   readyCalls: number
+  /** ms after navigation start of the first `signalAbort()` call */
+  abortAt: number | null
+  abortCalls: number
   network: NetworkMode
+  player: PlayerMode
 }
 
 declare global {
@@ -27,15 +33,13 @@ declare global {
   }
 }
 
-/** sessionStorage key the dev server's screenly.js reads at page load */
+/** sessionStorage keys the dev server's screenly.js reads at page load */
 export const NETWORK_STORAGE_KEY = 'screenly-devtools:network'
+export const PLAYER_STORAGE_KEY = 'screenly-devtools:player'
 const RELOAD_FALLBACK_MS = 2000
 
-const NETWORK_LABELS: Record<NetworkMode, string> = {
-  online: 'Online',
-  offline: 'Offline: fetch rejects',
-  hang: 'Hang: fetch waits until aborted',
-}
+export type SignalTone = 'success' | 'warning' | 'neutral'
+export type SignalStatus = { text: string; tone: SignalTone }
 
 export function readSession(key: string): string | null {
   try {
@@ -54,81 +58,169 @@ export function writeSession(key: string, value: string | null) {
   }
 }
 
+function timing(at: number, calls: number): string {
+  return calls > 1 ? `${at} ms · ${calls} calls` : `${at} ms`
+}
+
 /**
- * Describe the ready signal for the panel.
+ * Describe the ready signal: when the app first called it, if at all.
  */
 export function describeReadySignal(
   state: ScreenlyDevServerState | undefined,
   expected: boolean | null,
-): string {
-  if (!state) return 'unknown'
+): SignalStatus {
+  if (!state) return { text: 'Unknown', tone: 'neutral' }
   if (state.readyAt !== null) {
-    const calls = state.readyCalls > 1 ? ` (${state.readyCalls} calls)` : ''
-    return `fired at ${state.readyAt} ms${calls}`
+    return { text: timing(state.readyAt, state.readyCalls), tone: 'success' }
   }
-  if (expected === false) return 'not called (ready_signal is off)'
-  return 'not called yet'
+  if (expected === false) return { text: 'Not used', tone: 'neutral' }
+  return { text: 'Waiting', tone: 'neutral' }
+}
+
+/**
+ * Describe the skip signal (`signalAbort()`). A skip is a warning: on a
+ * device the player would move on and the app would not be shown.
+ */
+export function describeSkipSignal(
+  state: ScreenlyDevServerState | undefined,
+): SignalStatus {
+  if (!state) return { text: 'Unknown', tone: 'neutral' }
+  if (state.player === 'legacy') {
+    return { text: 'Not available', tone: 'neutral' }
+  }
+  if (state.abortAt !== null) {
+    return {
+      text: `Skipped · ${timing(state.abortAt, state.abortCalls)}`,
+      tone: 'warning',
+    }
+  }
+  return { text: 'Not called', tone: 'neutral' }
+}
+
+function segmented(
+  name: string,
+  legend: string,
+  options: [string, string][],
+  help: string,
+): string {
+  return `
+    <fieldset aria-describedby="devtools-${name}-help">
+      <legend>${legend}</legend>
+      <div class="segmented">
+        ${options
+          .map(
+            ([value, label]) =>
+              `<label><input type="radio" name="${name}" value="${value}"><span>${label}</span></label>`,
+          )
+          .join('')}
+      </div>
+      <p class="help" id="devtools-${name}-help">${help}</p>
+    </fieldset>
+  `
 }
 
 const SECTION_HTML = `
-  <div class="section">
-    <div><strong>Ready signal:</strong> <span class="ready-status"></span></div>
-    <div class="field field--stacked">
-      <label for="devtools-network">Network</label>
-      <select id="devtools-network" aria-describedby="devtools-network-help">
-        ${Object.entries(NETWORK_LABELS)
-          .map(([value, label]) => `<option value="${value}">${label}</option>`)
-          .join('')}
-      </select>
-      <div class="field__help" id="devtools-network-help">Applies to cross-origin fetch calls. Changing it reloads the page.</div>
+  <div class="signals">
+    <div class="signal">
+      <span>Ready signal</span>
+      <span class="pill ready-status"></span>
+    </div>
+    <div class="signal">
+      <span>Skip signal</span>
+      <span class="pill skip-status"></span>
     </div>
   </div>
-  <div class="settings section" aria-live="polite">Loading settings…</div>
+  ${segmented(
+    'network',
+    'Network',
+    [
+      ['online', 'Online'],
+      ['offline', 'Offline'],
+      ['hang', 'Hang'],
+    ],
+    'Offline rejects cross-origin fetch calls. Hang keeps them pending until they are aborted. Reloads the page.',
+  )}
+  ${segmented(
+    'player',
+    'Player',
+    [
+      ['current', 'ScreenlyOS 26.9+'],
+      ['legacy', 'Older or browser'],
+    ],
+    'Older players and browsers have no signalAbort(), so apps cannot ask to be skipped. Reloads the page.',
+  )}
+  <div class="settings" aria-live="polite"><p class="help">Loading settings…</p></div>
 `
 
 /**
- * The dev server part of <edge-app-devtools>: ready signal status, network
- * simulator and a settings form that writes to `mock-data.yml`.
+ * The dev server part of <edge-app-devtools>: ready and skip signal status,
+ * network and player simulators, and a settings form that writes to
+ * `mock-data.yml`.
  */
 export class DevServerPanel {
   readonly element: HTMLDivElement
   private readyStatus: HTMLElement
-  private networkSelect: HTMLSelectElement
+  private skipStatus: HTMLElement
   private settingsHost: HTMLElement
   private config: DevServerConfig | null = null
   private loading = false
-  private onReady = () => this.renderReadyStatus()
+  private onSignal = () => this.renderSignals()
 
-  constructor(private onNetworkChange: (mode: NetworkMode) => void) {
+  constructor(
+    private onModesChange: (network: NetworkMode, player: PlayerMode) => void,
+  ) {
     this.element = document.createElement('div')
     this.element.className = 'dev-server'
     this.element.innerHTML = SECTION_HTML
     this.readyStatus = this.element.querySelector('.ready-status')!
-    this.networkSelect = this.element.querySelector('#devtools-network')!
+    this.skipStatus = this.element.querySelector('.skip-status')!
     this.settingsHost = this.element.querySelector('.settings')!
 
-    this.networkSelect.addEventListener('change', () => {
-      const mode = this.networkSelect.value as NetworkMode
-      writeSession(NETWORK_STORAGE_KEY, mode === 'online' ? null : mode)
+    this.element.addEventListener('change', (event) => {
+      const input = event.target as HTMLInputElement
+      if (input.type !== 'radio') return
+      if (input.name === 'network') {
+        writeSession(
+          NETWORK_STORAGE_KEY,
+          input.value === 'online' ? null : input.value,
+        )
+      } else if (input.name === 'player') {
+        writeSession(
+          PLAYER_STORAGE_KEY,
+          input.value === 'current' ? null : input.value,
+        )
+      } else {
+        return
+      }
       window.location.reload()
     })
   }
 
-  get network(): NetworkMode {
-    return window.__screenlyDevServer?.network ?? 'online'
-  }
-
   connect() {
-    window.removeEventListener('screenly:ready', this.onReady)
-    window.addEventListener('screenly:ready', this.onReady)
-    this.networkSelect.value = this.network
-    this.onNetworkChange(this.network)
-    this.renderReadyStatus()
+    for (const type of ['screenly:ready', 'screenly:abort']) {
+      window.removeEventListener(type, this.onSignal)
+      window.addEventListener(type, this.onSignal)
+    }
+    const state = window.__screenlyDevServer
+    const network = state?.network ?? 'online'
+    const player = state?.player ?? 'current'
+    this.check('network', network)
+    this.check('player', player)
+    this.onModesChange(network, player)
+    this.renderSignals()
     void this.load()
   }
 
   disconnect() {
-    window.removeEventListener('screenly:ready', this.onReady)
+    window.removeEventListener('screenly:ready', this.onSignal)
+    window.removeEventListener('screenly:abort', this.onSignal)
+  }
+
+  private check(name: string, value: string) {
+    const input = this.element.querySelector<HTMLInputElement>(
+      `input[name="${name}"][value="${value}"]`,
+    )
+    if (input) input.checked = true
   }
 
   private async load() {
@@ -136,7 +228,7 @@ export class DevServerPanel {
     this.loading = true
     try {
       this.config = await fetchDevServerConfig()
-      this.renderReadyStatus()
+      this.renderSignals()
       this.renderSettings()
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -147,11 +239,17 @@ export class DevServerPanel {
     }
   }
 
-  private renderReadyStatus() {
-    this.readyStatus.textContent = describeReadySignal(
-      window.__screenlyDevServer,
-      this.config?.ready_signal ?? null,
+  private renderSignals() {
+    const state = window.__screenlyDevServer
+    const show = (element: HTMLElement, status: SignalStatus) => {
+      element.textContent = status.text
+      element.dataset.tone = status.tone
+    }
+    show(
+      this.readyStatus,
+      describeReadySignal(state, this.config?.ready_signal ?? null),
     )
+    show(this.skipStatus, describeSkipSignal(state))
   }
 
   private renderSettings() {
@@ -166,11 +264,7 @@ export class DevServerPanel {
     }
     if (advanced.length > 0) {
       form.append(
-        group(
-          'Advanced settings',
-          createSettingRows(advanced, config.values),
-          false,
-        ),
+        group('Advanced', createSettingRows(advanced, config.values), false),
       )
     }
     form.append(
@@ -182,11 +276,9 @@ export class DevServerPanel {
     actions.innerHTML = `
       <button type="submit" class="primary">Save and reload</button>
       <button type="reset">Revert</button>
+      <p class="status" role="status"></p>
     `
-    const status = document.createElement('div')
-    status.className = 'status'
-    status.setAttribute('role', 'status')
-    form.append(actions, status)
+    form.append(actions)
 
     form.addEventListener('reset', (event) => {
       event.preventDefault()
@@ -194,7 +286,7 @@ export class DevServerPanel {
     })
     form.addEventListener('submit', (event) => {
       event.preventDefault()
-      void this.save(form, status)
+      void this.save(form, actions.querySelector('.status')!)
     })
 
     this.settingsHost.classList.remove('status--error')
@@ -231,6 +323,7 @@ function group(title: string, rows: HTMLElement[], open = true) {
   const details = document.createElement('details')
   details.open = open
   const summary = document.createElement('summary')
+  summary.className = 'section-title'
   summary.textContent = title
   details.append(summary, ...rows)
   return details

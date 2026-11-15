@@ -4,9 +4,14 @@ import {
   readSession,
   writeSession,
   type NetworkMode,
+  type PlayerMode,
 } from './dev-server-panel.js'
 
-export type { NetworkMode, ScreenlyDevServerState } from './dev-server-panel.js'
+export type {
+  NetworkMode,
+  PlayerMode,
+  ScreenlyDevServerState,
+} from './dev-server-panel.js'
 
 const COLLAPSED_STORAGE_KEY = 'screenly-devtools:collapsed'
 
@@ -45,8 +50,8 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   private started = false
   private body!: HTMLDivElement
   private collapseButton!: HTMLButtonElement
-  private networkBadge!: HTMLSpanElement
-  private infoSection!: HTMLDivElement
+  private badges!: HTMLSpanElement
+  private infoSection!: HTMLElement
   private devServerPanel: DevServerPanel | null = null
 
   /**
@@ -85,18 +90,20 @@ export class EdgeAppDevToolsElement extends HTMLElement {
     this.infoPanel.className = 'info-panel'
     this.infoPanel.innerHTML = `
       <div class="info-panel__header">
-        <span class="info-panel__title">Edge App Dev Tools<span class="badge" hidden></span></span>
-        <button type="button" class="collapse" aria-expanded="true" aria-controls="devtools-body">Hide</button>
+        <span class="info-panel__title">Edge App dev tools<span class="badges"></span></span>
+        <button type="button" class="collapse" aria-expanded="true" aria-controls="devtools-body" aria-label="Collapse dev tools">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"/></svg>
+        </button>
       </div>
       <div class="info-panel__body" id="devtools-body">
-        <div class="info-panel__info"></div>
-        <div class="info-panel__hint">Press 'D' to toggle</div>
+        <dl class="stats info-panel__info"></dl>
+        <p class="info-panel__hint">Press <kbd>D</kbd> to show or hide this panel</p>
       </div>
     `
 
     this.body = this.infoPanel.querySelector('.info-panel__body')!
     this.collapseButton = this.infoPanel.querySelector('.collapse')!
-    this.networkBadge = this.infoPanel.querySelector('.badge')!
+    this.badges = this.infoPanel.querySelector('.badges')!
     this.infoSection = this.infoPanel.querySelector('.info-panel__info')!
 
     this.collapseButton.addEventListener('click', () => {
@@ -203,22 +210,37 @@ export class EdgeAppDevToolsElement extends HTMLElement {
 
   private setCollapsed(collapsed: boolean) {
     this.body.hidden = collapsed
-    this.collapseButton.textContent = collapsed ? 'Show' : 'Hide'
     this.collapseButton.setAttribute('aria-expanded', String(!collapsed))
+    this.collapseButton.setAttribute(
+      'aria-label',
+      collapsed ? 'Expand dev tools' : 'Collapse dev tools',
+    )
   }
 
   private setUpDevServer() {
     this.start()
     if (!this.devServerPanel) {
-      this.devServerPanel = new DevServerPanel((mode) => this.showNetwork(mode))
+      this.devServerPanel = new DevServerPanel((network, player) =>
+        this.showModes(network, player),
+      )
       this.infoSection.after(this.devServerPanel.element)
     }
     this.devServerPanel.connect()
   }
 
-  private showNetwork(mode: NetworkMode) {
-    this.networkBadge.hidden = mode === 'online'
-    this.networkBadge.textContent = mode
+  private showModes(network: NetworkMode, player: PlayerMode) {
+    const labels = [
+      network !== 'online' ? network : null,
+      player === 'legacy' ? 'older player' : null,
+    ].filter((label): label is string => label !== null)
+    this.badges.replaceChildren(
+      ...labels.map((label) =>
+        Object.assign(document.createElement('span'), {
+          className: 'badge',
+          textContent: label,
+        }),
+      ),
+    )
   }
 
   private updateInfo() {
@@ -230,10 +252,10 @@ export class EdgeAppDevToolsElement extends HTMLElement {
     const refHeight = this.referenceHeight
 
     this.infoSection.innerHTML = `
-      <div><strong>Viewport:</strong> ${viewportWidth} × ${viewportHeight}px</div>
-      <div><strong>Reference:</strong> ${refWidth} × ${refHeight}px</div>
-      <div><strong>Scale:</strong> ${this.scale.toFixed(3)}</div>
-      <div><strong>Orientation:</strong> ${viewportWidth >= viewportHeight ? 'Landscape' : 'Portrait'}</div>
+      <div><dt>Viewport</dt><dd>${viewportWidth} × ${viewportHeight}</dd></div>
+      <div><dt>Reference</dt><dd>${refWidth} × ${refHeight}</dd></div>
+      <div><dt>Scale</dt><dd>${this.scale.toFixed(3)}</dd></div>
+      <div><dt>Orientation</dt><dd>${viewportWidth >= viewportHeight ? 'Landscape' : 'Portrait'}</dd></div>
     `
   }
 

@@ -55,6 +55,12 @@ export interface ScreenlySettings extends Record<string, unknown> {
 export interface ScreenlyObject {
   /** Signal that the app is ready to be displayed */
   signalReadyForRendering: () => void
+  /**
+   * Ask the player to skip this app and show the next playlist item.
+   * ScreenlyOS 26.9 and later only; undefined on older players and in
+   * browsers. Prefer the `signalAbort()` helper, which checks for it.
+   */
+  signalAbort?: () => void
   /** Device and screen metadata */
   metadata: ScreenlyMetadata
   /** App settings and configuration */

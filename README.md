@@ -115,6 +115,7 @@ signalReady()
 - `getSetting<T>(key)` - Get specific setting with type safety
 - `getSettingWithDefault<T>(key, default)` - Get setting with fallback
 - `signalReady()` - Signal app is ready for display
+- `signalAbort()` - Ask the player to skip the app; returns `false` on players without support (before ScreenlyOS 26.9) and in browsers
 
 ### Metadata
 
@@ -275,7 +276,7 @@ Start the Vite development server with mock data from `screenly.yml` and `mock-d
 npm run dev
 ```
 
-The dev server adds a dev tools panel to the page (press `D` to toggle it). It edits the app's settings and screen metadata, writing them to `mock-data.yml` and reloading the page, shows when the app sent its ready signal, and can simulate an offline network. See [`<edge-app-devtools>`](docs/components.md#edge-app-devtools) for details.
+The dev server adds a dev tools panel to the page (press `D` to toggle it). It edits the app's settings and screen metadata, writing them to `mock-data.yml` and reloading the page, shows when the app sent its ready and skip signals, and can simulate an offline network or a player without `signalAbort()`. See [`<edge-app-devtools>`](docs/components.md#edge-app-devtools) for details.
 
 #### Building
 
