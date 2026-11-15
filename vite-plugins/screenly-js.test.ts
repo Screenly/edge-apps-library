@@ -8,7 +8,6 @@ type DevState = {
   abortAt: number | null
   abortCalls: number
   network: string
-  player: string
 }
 type TestWindow = Window & {
   __screenlyDevServer?: DevState
@@ -21,7 +20,6 @@ function runScreenlyJs() {
   new Function(generateScreenlyObject(defaultScreenlyConfig))()
 }
 
-// eslint-disable-next-line max-lines-per-function
 describe('generated screenly.js', () => {
   const realFetch = window.fetch
   let fetchSpy: ReturnType<typeof vi.fn>
@@ -53,7 +51,7 @@ describe('generated screenly.js', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
-  test('records skip requests like a ScreenlyOS 26.9+ player', () => {
+  test('records skip requests and dispatches screenly:abort once', () => {
     runScreenlyJs()
     const listener = vi.fn()
     window.addEventListener('screenly:abort', listener)
@@ -64,17 +62,9 @@ describe('generated screenly.js', () => {
     window.removeEventListener('screenly:abort', listener)
 
     const state = testWindow.__screenlyDevServer!
-    expect(state.player).toBe('current')
     expect(state.abortAt).toEqual(expect.any(Number))
     expect(state.abortCalls).toBe(2)
     expect(listener).toHaveBeenCalledTimes(1)
-  })
-
-  test('has no signalAbort when simulating an older player', () => {
-    sessionStorage.setItem('screenly-devtools:player', 'legacy')
-    runScreenlyJs()
-    expect(testWindow.__screenlyDevServer!.player).toBe('legacy')
-    expect(testWindow.screenly).not.toHaveProperty('signalAbort')
   })
 
   test('leaves fetch alone while online', () => {

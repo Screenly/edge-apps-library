@@ -16,8 +16,7 @@ const DEV_SERVER_STATE = `
         readyCalls: 0,
         abortAt: null,
         abortCalls: 0,
-        network: mode === 'offline' || mode === 'hang' ? mode : 'online',
-        player: read('screenly-devtools:player') === 'legacy' ? 'legacy' : 'current'
+        network: mode === 'offline' || mode === 'hang' ? mode : 'online'
       }
       if (state.network === 'online') return state
 
@@ -55,18 +54,16 @@ const DEV_SERVER_STATE = `
     })()
 `
 
-// signalAbort() exists on ScreenlyOS 26.9+ only, so it is optional here too.
+// signalAbort() is the skip request of ScreenlyOS 26.9+ players.
 const SIGNAL_ABORT = `
-    if (window.__screenlyDevServer.player === 'current') {
-      // On a device the player moves on to the next playlist item.
-      window.screenly.signalAbort = function () {
-        var state = window.__screenlyDevServer
-        state.abortCalls += 1
-        if (state.abortAt === null) {
-          state.abortAt = Math.round(performance.now())
-          console.info('[dev server] The app asked the player to skip it (signalAbort).')
-          window.dispatchEvent(new CustomEvent('screenly:abort', { detail: { abortAt: state.abortAt } }))
-        }
+    // On a device the player moves on to the next playlist item.
+    window.screenly.signalAbort = function () {
+      var state = window.__screenlyDevServer
+      state.abortCalls += 1
+      if (state.abortAt === null) {
+        state.abortAt = Math.round(performance.now())
+        console.info('[dev server] The app asked the player to skip it (signalAbort).')
+        window.dispatchEvent(new CustomEvent('screenly:abort', { detail: { abortAt: state.abortAt } }))
       }
     }
 `
@@ -76,9 +73,6 @@ const SIGNAL_ABORT = `
  * when the app calls `signalReadyForRendering()` and `signalAbort()`, and,
  * when the dev tools network simulator is on, replaces `fetch` for
  * cross-origin requests.
- *
- * `signalAbort()` exists on ScreenlyOS 26.9 and later only, so it is left
- * out when the dev tools simulate an older player or a browser.
  */
 export function generateScreenlyObject(config: BaseScreenlyMockData): string {
   return `

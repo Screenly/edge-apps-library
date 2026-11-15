@@ -4,14 +4,9 @@ import {
   readSession,
   writeSession,
   type NetworkMode,
-  type PlayerMode,
 } from './dev-server-panel.js'
 
-export type {
-  NetworkMode,
-  PlayerMode,
-  ScreenlyDevServerState,
-} from './dev-server-panel.js'
+export type { NetworkMode, ScreenlyDevServerState } from './dev-server-panel.js'
 
 const COLLAPSED_STORAGE_KEY = 'screenly-devtools:collapsed'
 
@@ -220,26 +215,24 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   private setUpDevServer() {
     this.start()
     if (!this.devServerPanel) {
-      this.devServerPanel = new DevServerPanel((network, player) =>
-        this.showModes(network, player),
+      this.devServerPanel = new DevServerPanel((network) =>
+        this.showNetwork(network),
       )
       this.infoSection.after(this.devServerPanel.element)
     }
     this.devServerPanel.connect()
   }
 
-  private showModes(network: NetworkMode, player: PlayerMode) {
-    const labels = [
-      network !== 'online' ? network : null,
-      player === 'legacy' ? 'older player' : null,
-    ].filter((label): label is string => label !== null)
+  private showNetwork(network: NetworkMode) {
     this.badges.replaceChildren(
-      ...labels.map((label) =>
-        Object.assign(document.createElement('span'), {
-          className: 'badge',
-          textContent: label,
-        }),
-      ),
+      ...(network === 'online'
+        ? []
+        : [
+            Object.assign(document.createElement('span'), {
+              className: 'badge',
+              textContent: network,
+            }),
+          ]),
     )
   }
 

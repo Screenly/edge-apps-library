@@ -5,7 +5,6 @@ import {
   describeReadySignal,
   describeSkipSignal,
   NETWORK_STORAGE_KEY,
-  PLAYER_STORAGE_KEY,
   type ScreenlyDevServerState,
 } from './dev-server-panel'
 import type { DevServerConfig } from './settings-form'
@@ -77,7 +76,6 @@ const idle: ScreenlyDevServerState = {
   abortAt: null,
   abortCalls: 0,
   network: 'online',
-  player: 'current',
 }
 
 describe('describeReadySignal', () => {
@@ -99,7 +97,6 @@ describe('describeSkipSignal', () => {
     [undefined, 'Unknown', 'neutral'],
     [{}, 'Not called', 'neutral'],
     [{ abortAt: 1500, abortCalls: 1 }, 'Skipped · 1500 ms', 'warning'],
-    [{ player: 'legacy' }, 'Not available', 'neutral'],
   ] as const)('%j', (state, text, tone) => {
     expect(describeSkipSignal(state && { ...idle, ...state })).toEqual({
       text,
@@ -201,29 +198,23 @@ describe('<edge-app-devtools> dev server status and controls', () => {
     expect(skip.dataset.tone).toBe('warning')
   })
 
-  test('shows badges for the simulated network and player', async () => {
-    Object.assign(window.__screenlyDevServer!, {
-      network: 'offline',
-      player: 'legacy',
-    })
+  test('shows a badge while the network simulator is on', async () => {
+    window.__screenlyDevServer!.network = 'offline'
     const element = await mountWithDevServer()
     const root = element.shadowRoot!
     expect(
       [...root.querySelectorAll('.badge')].map((badge) => badge.textContent),
-    ).toEqual(['offline', 'older player'])
+    ).toEqual(['offline'])
     const checked = [
       ...root.querySelectorAll<HTMLInputElement>('input[type="radio"]:checked'),
     ].map((input) => input.value)
-    expect(checked).toEqual(['offline', 'legacy'])
+    expect(checked).toEqual(['offline'])
   })
 
-  test.each([
-    ['network', 'hang', NETWORK_STORAGE_KEY],
-    ['player', 'legacy', PLAYER_STORAGE_KEY],
-  ])('stores the %s mode for the next page load', async (name, value, key) => {
+  test('stores the network mode for the next page load', async () => {
     const element = await mountWithDevServer()
     const radio = element.shadowRoot!.querySelector<HTMLInputElement>(
-      `input[name="${name}"][value="${value}"]`,
+      'input[name="network"][value="hang"]',
     )!
     // jsdom can't reload; the mode must be stored before it tries to.
     try {
@@ -231,7 +222,7 @@ describe('<edge-app-devtools> dev server status and controls', () => {
     } catch {
       // ignore jsdom's "not implemented" navigation error
     }
-    expect(sessionStorage.getItem(key)).toBe(value)
+    expect(sessionStorage.getItem(NETWORK_STORAGE_KEY)).toBe('hang')
   })
 
   test('the D key toggles the panel, except while typing', async () => {

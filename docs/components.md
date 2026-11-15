@@ -16,7 +16,7 @@ components/
     auto-scaler.ts     # Complete component (TypeScript + CSS)
   dev-tools/
     dev-tools.ts         # Component; styles in dev-tools.styles.ts
-    dev-server-panel.ts  # Signal status, network and player modes, settings form
+    dev-server-panel.ts  # Signal status, network simulator, settings form
     settings-form.ts     # Form helpers and the dev server API client
 ```
 
@@ -121,7 +121,6 @@ With the dev server, the panel also shows:
 
 - Ready signal: whether the app called `signalReady()` and how many milliseconds after page load. Apps with `ready_signal: true` in `screenly.yml` should reach this.
 - Skip signal: whether the app called `signalAbort()` to ask the player to skip it, and when. On a device the player would move on to the next playlist item; the dev server only records it, so the page stays as the app left it.
-- Player: `ScreenlyOS 26.9+` gives `screenly` a `signalAbort()` method, as those players do. `Older or browser` leaves it out, so you can check the app's fallback (usually a message on screen). The mode lasts for the browser tab and changing it reloads the page.
 - Network: `Offline` makes cross-origin `fetch` calls reject with a `TypeError` and sets `navigator.onLine` to false, for testing cache fallbacks. `Hang` keeps them pending until their `AbortSignal` fires, for testing timeouts and abort handling. Requests to the dev server and the app's own files still work. The mode lasts for the browser tab and changing it reloads the page. `XMLHttpRequest` isn't covered.
 - Settings: a form built from the `settings` in `screenly.yml`. `select` settings get a dropdown, `boolean` a switch, `secret` a masked field and everything else a text field, ordered by `display_order`. Settings marked `advanced` sit in a collapsed group. Screen metadata (screen name, location, coordinates and tags) has its own group.
 
@@ -164,7 +163,7 @@ The panel uses two endpoints that exist only while `npm run dev` runs.
 
 `POST /__screenly/config` takes `{ "settings": { ... }, "metadata": { ... } }`, merges it into `mock-data.yml` and returns the same shape as `GET`. Only settings declared in `screenly.yml` are accepted, as strings. Metadata accepts `screen_name`, `hostname`, `location`, `coordinates` (`[latitude, longitude]`) and `tags`. Anything else gets a 400. The request must be JSON from the dev server's own origin, otherwise it gets a 403.
 
-The dev server's `screenly.js` keeps its state on `window.__screenlyDevServer`: `readyAt`, `readyCalls`, `abortAt`, `abortCalls`, `network` and `player`. It dispatches `screenly:ready` and `screenly:abort` events on `window` the first time the app sends each signal.
+The dev server's `screenly.js` keeps its state on `window.__screenlyDevServer`: `readyAt`, `readyCalls`, `abortAt`, `abortCalls` and `network`. It dispatches `screenly:ready` and `screenly:abort` events on `window` the first time the app sends each signal.
 
 ## Component Guidelines
 

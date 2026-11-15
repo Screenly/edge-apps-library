@@ -10,8 +10,6 @@ import {
 } from './settings-form.js'
 
 export type NetworkMode = 'online' | 'offline' | 'hang'
-/** `current`: ScreenlyOS 26.9+ with `signalAbort()`; `legacy`: without it */
-export type PlayerMode = 'current' | 'legacy'
 
 /**
  * State the dev server's screenly.js keeps on `window.__screenlyDevServer`.
@@ -24,7 +22,6 @@ export interface ScreenlyDevServerState {
   abortAt: number | null
   abortCalls: number
   network: NetworkMode
-  player: PlayerMode
 }
 
 declare global {
@@ -33,9 +30,8 @@ declare global {
   }
 }
 
-/** sessionStorage keys the dev server's screenly.js reads at page load */
+/** sessionStorage key the dev server's screenly.js reads at page load */
 export const NETWORK_STORAGE_KEY = 'screenly-devtools:network'
-export const PLAYER_STORAGE_KEY = 'screenly-devtools:player'
 const RELOAD_FALLBACK_MS = 2000
 
 export type SignalTone = 'success' | 'warning' | 'neutral'
@@ -85,9 +81,6 @@ export function describeSkipSignal(
   state: ScreenlyDevServerState | undefined,
 ): SignalStatus {
   if (!state) return { text: 'Unknown', tone: 'neutral' }
-  if (state.player === 'legacy') {
-    return { text: 'Not available', tone: 'neutral' }
-  }
   if (state.abortAt !== null) {
     return {
       text: `Skipped · ${timing(state.abortAt, state.abortCalls)}`,
@@ -140,21 +133,12 @@ const SECTION_HTML = `
     ],
     'Offline rejects cross-origin fetch calls. Hang keeps them pending until they are aborted. Reloads the page.',
   )}
-  ${segmented(
-    'player',
-    'Player',
-    [
-      ['current', 'ScreenlyOS 26.9+'],
-      ['legacy', 'Older or browser'],
-    ],
-    'Older players and browsers have no signalAbort(), so apps cannot ask to be skipped. Reloads the page.',
-  )}
   <div class="settings" aria-live="polite"><p class="help">Loading settings…</p></div>
 `
 
 /**
  * The dev server part of <edge-app-devtools>: ready and skip signal status,
- * network and player simulators, and a settings form that writes to
+ * network simulator, and a settings form that writes to
  * `mock-data.yml`.
  */
 export class DevServerPanel {
@@ -166,9 +150,7 @@ export class DevServerPanel {
   private loading = false
   private onSignal = () => this.renderSignals()
 
-  constructor(
-    private onModesChange: (network: NetworkMode, player: PlayerMode) => void,
-  ) {
+  constructor(private onNetworkChange: (network: NetworkMode) => void) {
     this.element = document.createElement('div')
     this.element.className = 'dev-server'
     this.element.innerHTML = SECTION_HTML
@@ -178,20 +160,11 @@ export class DevServerPanel {
 
     this.element.addEventListener('change', (event) => {
       const input = event.target as HTMLInputElement
-      if (input.type !== 'radio') return
-      if (input.name === 'network') {
-        writeSession(
-          NETWORK_STORAGE_KEY,
-          input.value === 'online' ? null : input.value,
-        )
-      } else if (input.name === 'player') {
-        writeSession(
-          PLAYER_STORAGE_KEY,
-          input.value === 'current' ? null : input.value,
-        )
-      } else {
-        return
-      }
+      if (input.type !== 'radio' || input.name !== 'network') return
+      writeSession(
+        NETWORK_STORAGE_KEY,
+        input.value === 'online' ? null : input.value,
+      )
       window.location.reload()
     })
   }
@@ -203,10 +176,8 @@ export class DevServerPanel {
     }
     const state = window.__screenlyDevServer
     const network = state?.network ?? 'online'
-    const player = state?.player ?? 'current'
     this.check('network', network)
-    this.check('player', player)
-    this.onModesChange(network, player)
+    this.onNetworkChange(network)
     this.renderSignals()
     void this.load()
   }
