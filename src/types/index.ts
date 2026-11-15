@@ -55,6 +55,8 @@ export interface ScreenlySettings extends Record<string, unknown> {
 export interface ScreenlyObject {
   /** Signal that the app is ready to be displayed */
   signalReadyForRendering: () => void
+  /** Ask the player to skip this app (ScreenlyOS 26.9 and later only) */
+  signalAbort?: () => void
   /** Device and screen metadata */
   metadata: ScreenlyMetadata
   /** App settings and configuration */

@@ -75,6 +75,16 @@ export function signalReady(): void {
   screenly.signalReadyForRendering()
 }
 
+/**
+ * Ask the player to skip this app and show the next playlist item.
+ * Returns false where the player can't (before ScreenlyOS 26.9, browsers).
+ */
+export function signalAbort(): boolean {
+  if (typeof screenly.signalAbort !== 'function') return false
+  screenly.signalAbort()
+  return true
+}
+
 // Types
 export type MeasurementUnit = 'metric' | 'imperial'
 

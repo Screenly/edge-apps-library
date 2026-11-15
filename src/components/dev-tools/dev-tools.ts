@@ -1,3 +1,24 @@
+import { devToolsStyles } from './dev-tools.styles.js'
+import {
+  DevServerPanel,
+  readSession,
+  writeSession,
+  type NetworkMode,
+} from './dev-server-panel.js'
+
+export type { NetworkMode, ScreenlyDevServerState } from './dev-server-panel.js'
+
+const COLLAPSED_STORAGE_KEY = 'screenly-devtools:collapsed'
+
+function isTypingTarget(event: KeyboardEvent): boolean {
+  const target = event.composedPath()[0]
+  if (!(target instanceof HTMLElement)) return false
+  return (
+    target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+  )
+}
+
 /**
  * <edge-app-devtools>
  *
@@ -17,12 +38,21 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   private infoPanel!: HTMLDivElement
   private isVisible = false
   private scale = 1
+  private started = false
+  private body!: HTMLDivElement
+  private collapseButton!: HTMLButtonElement
+  private badges!: HTMLSpanElement
+  private infoSection!: HTMLElement
+  private devServerPanel: DevServerPanel | null = null
+
+  public collapsedByDefault = false
 
   private boundOnResize = () => this.updateInfo()
   private boundOnKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'd' || event.key === 'D') {
-      this.toggle()
-    }
+    if (event.key !== 'd' && event.key !== 'D') return
+    if (event.ctrlKey || event.metaKey || event.altKey) return
+    if (isTypingTarget(event)) return
+    this.toggle()
   }
   private boundOnScaleChange = (event: Event) => {
     const detail = (event as CustomEvent<{ scale: number }>).detail
@@ -32,7 +62,7 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['reference-width', 'reference-height']
+    return ['reference-width', 'reference-height', 'dev-server']
   }
 
   constructor() {
@@ -41,54 +71,33 @@ export class EdgeAppDevToolsElement extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
-    style.textContent = `
-      :host {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        pointer-events: none;
-        z-index: 9999;
-        display: none;
-      }
-
-      :host([hidden]) {
-        display: none;
-      }
-
-      .info-panel {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: #00ff00;
-        padding: 12px 16px;
-        border-radius: 4px;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-        line-height: 1.6;
-        pointer-events: auto;
-        user-select: none;
-        min-width: 200px;
-      }
-
-      .info-panel__title {
-        font-weight: bold;
-        margin-bottom: 8px;
-        border-bottom: 1px solid #00ff00;
-        padding-bottom: 4px;
-      }
-
-      .info-panel__hint {
-        margin-top: 8px;
-        font-size: 10px;
-        color: #888;
-      }
-    `
+    style.textContent = devToolsStyles
 
     this.infoPanel = document.createElement('div')
     this.infoPanel.className = 'info-panel'
+    this.infoPanel.innerHTML = `
+      <div class="info-panel__header">
+        <span class="info-panel__title">Edge App dev tools<span class="badges"></span></span>
+        <button type="button" class="collapse" aria-expanded="true" aria-controls="devtools-body" aria-label="Collapse dev tools">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"/></svg>
+        </button>
+      </div>
+      <div class="info-panel__body" id="devtools-body">
+        <dl class="stats info-panel__info"></dl>
+        <p class="info-panel__hint">Press <kbd>D</kbd> to show or hide this panel</p>
+      </div>
+    `
+
+    this.body = this.infoPanel.querySelector('.info-panel__body')!
+    this.collapseButton = this.infoPanel.querySelector('.collapse')!
+    this.badges = this.infoPanel.querySelector('.badges')!
+    this.infoSection = this.infoPanel.querySelector('.info-panel__info')!
+
+    this.collapseButton.addEventListener('click', () => {
+      const collapsed = !this.body.hidden
+      this.setCollapsed(collapsed)
+      writeSession(COLLAPSED_STORAGE_KEY, String(collapsed))
+    })
 
     shadow.append(style, this.infoPanel)
   }
@@ -97,30 +106,21 @@ export class EdgeAppDevToolsElement extends HTMLElement {
     this.upgradeProperty('referenceWidth')
     this.upgradeProperty('referenceHeight')
 
-    if (!this.isDevelopmentMode()) {
+    if (!this.isDevelopmentMode() && !this.hasAttribute('dev-server')) {
       // In production we keep the element present but hidden
       this.hide()
       return
     }
 
-    window.addEventListener('resize', this.boundOnResize)
-    window.addEventListener('keydown', this.boundOnKeyDown)
-
-    // Listen for scalechange events from <auto-scaler> elements
-    // Events bubble up to document level, so we can listen there
-    // This works whether auto-scaler is a parent or sibling
-    document.addEventListener(
-      'scalechange',
-      this.boundOnScaleChange as EventListener,
-    )
-
-    this.show()
-    this.updateInfo()
+    this.start()
+    if (this.hasAttribute('dev-server')) this.setUpDevServer()
   }
 
   disconnectedCallback() {
+    this.started = false
     window.removeEventListener('resize', this.boundOnResize)
     window.removeEventListener('keydown', this.boundOnKeyDown)
+    this.devServerPanel?.disconnect()
     document.removeEventListener(
       'scalechange',
       this.boundOnScaleChange as EventListener,
@@ -128,11 +128,15 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   }
 
   attributeChangedCallback(
-    _name: string,
+    name: string,
     _oldValue: string | null,
     _newValue: string | null,
   ) {
     if (!this.isConnected) return
+    if (name === 'dev-server') {
+      if (this.hasAttribute('dev-server')) this.setUpDevServer()
+      return
+    }
     this.updateInfo()
   }
 
@@ -168,21 +172,75 @@ export class EdgeAppDevToolsElement extends HTMLElement {
     return Number.isFinite(value) ? value : 1080
   }
 
+  private start() {
+    if (this.started) return
+    this.started = true
+
+    window.addEventListener('resize', this.boundOnResize)
+    window.addEventListener('keydown', this.boundOnKeyDown)
+
+    // Listen for scalechange events from <auto-scaler> elements
+    // Events bubble up to document level, so we can listen there
+    // This works whether auto-scaler is a parent or sibling
+    document.addEventListener(
+      'scalechange',
+      this.boundOnScaleChange as EventListener,
+    )
+
+    const stored = readSession(COLLAPSED_STORAGE_KEY)
+    this.setCollapsed(
+      stored === null ? this.collapsedByDefault : stored === 'true',
+    )
+    this.show()
+    this.updateInfo()
+  }
+
+  private setCollapsed(collapsed: boolean) {
+    this.body.hidden = collapsed
+    this.collapseButton.setAttribute('aria-expanded', String(!collapsed))
+    this.collapseButton.setAttribute(
+      'aria-label',
+      collapsed ? 'Expand dev tools' : 'Collapse dev tools',
+    )
+  }
+
+  private setUpDevServer() {
+    this.start()
+    if (!this.devServerPanel) {
+      this.devServerPanel = new DevServerPanel((network) =>
+        this.showNetwork(network),
+      )
+      this.infoSection.after(this.devServerPanel.element)
+    }
+    this.devServerPanel.connect()
+  }
+
+  private showNetwork(network: NetworkMode) {
+    this.badges.replaceChildren(
+      ...(network === 'online'
+        ? []
+        : [
+            Object.assign(document.createElement('span'), {
+              className: 'badge',
+              textContent: network,
+            }),
+          ]),
+    )
+  }
+
   private updateInfo() {
-    if (!this.infoPanel) return
+    if (!this.infoSection) return
 
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
     const refWidth = this.referenceWidth
     const refHeight = this.referenceHeight
 
-    this.infoPanel.innerHTML = `
-      <div class="info-panel__title">Edge App Dev Tools</div>
-      <div><strong>Viewport:</strong> ${viewportWidth} × ${viewportHeight}px</div>
-      <div><strong>Reference:</strong> ${refWidth} × ${refHeight}px</div>
-      <div><strong>Scale:</strong> ${this.scale.toFixed(3)}</div>
-      <div><strong>Orientation:</strong> ${viewportWidth >= viewportHeight ? 'Landscape' : 'Portrait'}</div>
-      <div class="info-panel__hint">Press 'D' to toggle</div>
+    this.infoSection.innerHTML = `
+      <div><dt>Viewport</dt><dd>${viewportWidth} × ${viewportHeight}</dd></div>
+      <div><dt>Reference</dt><dd>${refWidth} × ${refHeight}</dd></div>
+      <div><dt>Scale</dt><dd>${this.scale.toFixed(3)}</dd></div>
+      <div><dt>Orientation</dt><dd>${viewportWidth >= viewportHeight ? 'Landscape' : 'Portrait'}</dd></div>
     `
   }
 
