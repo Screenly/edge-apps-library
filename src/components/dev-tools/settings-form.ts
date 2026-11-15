@@ -1,15 +1,8 @@
-/**
- * Form helpers for the settings section of <edge-app-devtools>.
- * The shapes match what the dev server returns from `/__screenly/config`
- * (see `vite-plugins/dev-server.ts`).
- */
-
 export const DEV_SERVER_CONFIG_PATH = '/__screenly/config'
 
 export interface DevServerSettingField {
   key: string
   title: string
-  /** Manifest type: `string` or `secret` */
   type: string
   /** Editor type from `help_text.properties.type`: `select`, `boolean`, `string`, ... */
   input: string
@@ -49,10 +42,6 @@ export interface DevServerConfigUpdate {
   >
 }
 
-/**
- * Order fields the way the Screenly web console does: by `display_order`,
- * then fields without one in manifest order. Split out advanced fields.
- */
 export function groupSettingFields(fields: DevServerSettingField[]): {
   basic: DevServerSettingField[]
   advanced: DevServerSettingField[]
@@ -134,9 +123,6 @@ function createInput(
   })
 }
 
-/**
- * Build one labelled row per setting.
- */
 export function createSettingRows(
   fields: DevServerSettingField[],
   values: Record<string, string>,
@@ -171,10 +157,6 @@ export function createSettingRows(
   })
 }
 
-/**
- * Read setting values back from rendered rows. Booleans come back as
- * `'true'` or `'false'`, the strings Screenly passes to apps.
- */
 export function readSettingValues(root: ParentNode): Record<string, string> {
   const values: Record<string, string> = {}
   root

@@ -11,7 +11,6 @@ type EditableMetadata = Pick<
   'location' | 'coordinates' | 'tags' | 'screen_name' | 'hostname'
 >
 
-/** Request body of `POST /__screenly/config` */
 export type DevServerConfigUpdate = {
   settings?: Record<string, string>
   metadata?: Partial<EditableMetadata>
@@ -85,10 +84,6 @@ function validateMetadata(
   return { value: metadata as Partial<EditableMetadata> }
 }
 
-/**
- * Check a POST body. Returns the update or an error message.
- * Only settings declared in `screenly.yml` can be written.
- */
 export function validateConfigUpdate(
   body: unknown,
   allowedSettings: string[],
@@ -114,10 +109,6 @@ export function validateConfigUpdate(
   return update
 }
 
-/**
- * Merge an update into `mock-data.yml`, keeping its comments and any keys
- * the update doesn't mention.
- */
 export function writeMockDataOverrides(
   mockDataPath: string,
   update: DevServerConfigUpdate,
@@ -139,7 +130,7 @@ export function writeMockDataOverrides(
     for (const [key, value] of Object.entries(values)) {
       const existing = doc.getIn([section, key], true)
       if (YAML.isScalar(existing) && !Array.isArray(value)) {
-        // Update in place to keep the comment on that line
+        // Updating in place keeps the comment on that line
         existing.value = value
       } else {
         doc.setIn([section, key], doc.createNode(value))

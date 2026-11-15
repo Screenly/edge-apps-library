@@ -27,11 +27,6 @@ export type BaseScreenlyMockData = {
 
 export type DevServerSettingOption = { label: string; value: string }
 
-/**
- * A manifest setting as the dev tools panel needs it. `type` is the
- * manifest type (`string` or `secret`); `input` is the editor type from
- * `help_text.properties.type` (`select`, `boolean`, `string`, ...).
- */
 export type DevServerSettingField = {
   key: string
   title: string
@@ -46,7 +41,6 @@ export type DevServerSettingField = {
   display_order?: number
 }
 
-/** Response body of `GET /__screenly/config` */
 export type DevServerConfig = {
   ready_signal: boolean
   settings: DevServerSettingField[]
@@ -225,10 +219,6 @@ function describeField(
   return described
 }
 
-/**
- * Describe the manifest settings for the dev tools panel, including the
- * editor hints stored in `help_text.properties`.
- */
 export function describeManifestSettings(
   manifest: Record<string, unknown> | null,
 ): DevServerSettingField[] {

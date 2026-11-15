@@ -1,6 +1,5 @@
 import type { BaseScreenlyMockData } from './screenly-config.ts'
 
-// Dev tools state, read from sessionStorage, plus the network simulator.
 const DEV_SERVER_STATE = `
     window.__screenlyDevServer = (function () {
       var read = function (key) {
@@ -20,8 +19,7 @@ const DEV_SERVER_STATE = `
       }
       if (state.network === 'online') return state
 
-      // Simulate a device without a network: cross-origin requests fail,
-      // while the app's own files and the dev server keep working.
+      // Only cross-origin requests fail: on a device the app's own files are local.
       var realFetch = window.fetch.bind(window)
       var abortError = function (signal) {
         return signal.reason !== undefined
@@ -54,9 +52,7 @@ const DEV_SERVER_STATE = `
     })()
 `
 
-// signalAbort() is the skip request of ScreenlyOS 26.9+ players.
 const SIGNAL_ABORT = `
-    // On a device the player moves on to the next playlist item.
     window.screenly.signalAbort = function () {
       var state = window.__screenlyDevServer
       state.abortCalls += 1
@@ -68,12 +64,6 @@ const SIGNAL_ABORT = `
     }
 `
 
-/**
- * Build the dev server's screenly.js. Besides `window.screenly`, it records
- * when the app calls `signalReadyForRendering()` and `signalAbort()`, and,
- * when the dev tools network simulator is on, replaces `fetch` for
- * cross-origin requests.
- */
 export function generateScreenlyObject(config: BaseScreenlyMockData): string {
   return `
     // Generated screenly.js for development mode

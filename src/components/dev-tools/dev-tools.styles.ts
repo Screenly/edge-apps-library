@@ -1,5 +1,4 @@
 /* eslint-disable max-lines -- a single CSS string */
-/** Shadow DOM styles for <edge-app-devtools> */
 export const devToolsStyles = `
   :host {
     position: fixed;

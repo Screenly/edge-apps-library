@@ -76,10 +76,8 @@ export function signalReady(): void {
 }
 
 /**
- * Ask the player to skip this app and show the next playlist item, for
- * example when there is nothing worth showing.
- * Only ScreenlyOS 26.9 and later support this. Returns false where it isn't
- * available (older players, browsers), so the app can show a message instead.
+ * Ask the player to skip this app and show the next playlist item.
+ * Returns false where the player can't (before ScreenlyOS 26.9, browsers).
  */
 export function signalAbort(): boolean {
   if (typeof screenly.signalAbort !== 'function') return false

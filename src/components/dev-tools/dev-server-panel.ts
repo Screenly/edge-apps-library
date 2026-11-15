@@ -11,9 +11,6 @@ import {
 
 export type NetworkMode = 'online' | 'offline' | 'hang'
 
-/**
- * State the dev server's screenly.js keeps on `window.__screenlyDevServer`.
- */
 export interface ScreenlyDevServerState {
   /** ms after navigation start of the first `signalReadyForRendering()` call */
   readyAt: number | null
@@ -30,7 +27,6 @@ declare global {
   }
 }
 
-/** sessionStorage key the dev server's screenly.js reads at page load */
 export const NETWORK_STORAGE_KEY = 'screenly-devtools:network'
 const RELOAD_FALLBACK_MS = 2000
 
@@ -50,7 +46,7 @@ export function writeSession(key: string, value: string | null) {
     if (value === null) window.sessionStorage.removeItem(key)
     else window.sessionStorage.setItem(key, value)
   } catch {
-    // Storage can be blocked; the panel still works for this page load.
+    // Storage can be blocked; the panel still works without it.
   }
 }
 
@@ -58,9 +54,6 @@ function timing(at: number, calls: number): string {
   return calls > 1 ? `${at} ms · ${calls} calls` : `${at} ms`
 }
 
-/**
- * Describe the ready signal: when the app first called it, if at all.
- */
 export function describeReadySignal(
   state: ScreenlyDevServerState | undefined,
   expected: boolean | null,
@@ -73,10 +66,6 @@ export function describeReadySignal(
   return { text: 'Waiting', tone: 'neutral' }
 }
 
-/**
- * Describe the skip signal (`signalAbort()`). A skip is a warning: on a
- * device the player would move on and the app would not be shown.
- */
 export function describeSkipSignal(
   state: ScreenlyDevServerState | undefined,
 ): SignalStatus {
@@ -136,11 +125,6 @@ const SECTION_HTML = `
   <div class="settings" aria-live="polite"><p class="help">Loading settings…</p></div>
 `
 
-/**
- * The dev server part of <edge-app-devtools>: ready and skip signal status,
- * network simulator, and a settings form that writes to
- * `mock-data.yml`.
- */
 export class DevServerPanel {
   readonly element: HTMLDivElement
   private readyStatus: HTMLElement
@@ -278,8 +262,7 @@ export class DevServerPanel {
         metadata: readMetadataValues(form),
       })
       status.textContent = 'Saved to mock-data.yml. Reloading…'
-      // The dev server reloads the page when mock-data.yml changes.
-      // Reload anyway in case its websocket isn't connected.
+      // Fallback for when the dev server's reload websocket isn't connected
       window.setTimeout(() => window.location.reload(), RELOAD_FALLBACK_MS)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

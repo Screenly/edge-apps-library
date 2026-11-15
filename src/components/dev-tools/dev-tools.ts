@@ -26,10 +26,6 @@ function isTypingTarget(event: KeyboardEvent): boolean {
  * Intended to be used alongside <auto-scaler>. Listens for the
  * `scalechange` event dispatched by the scaler.
  *
- * The Vite dev server adds this element to every page it serves and sets
- * the `dev-server` attribute, which adds a settings editor, the ready
- * signal status and a network simulator.
- *
  * Usage:
  * ```html
  * <auto-scaler reference-width="1920" reference-height="1080">
@@ -49,10 +45,6 @@ export class EdgeAppDevToolsElement extends HTMLElement {
   private infoSection!: HTMLElement
   private devServerPanel: DevServerPanel | null = null
 
-  /**
-   * Start with the panel body collapsed unless the user opened it before.
-   * The dev server sets this on the element it adds.
-   */
   public collapsedByDefault = false
 
   private boundOnResize = () => this.updateInfo()

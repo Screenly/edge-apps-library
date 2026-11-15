@@ -62,10 +62,6 @@ async function handleConfigWrite(
   sendJson(res, 200, buildDevServerConfig(rootDir, getConfig()))
 }
 
-/**
- * `GET /__screenly/config` returns the manifest settings, current values and
- * metadata. `POST` merges settings and metadata into `mock-data.yml`.
- */
 export function handleConfigRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -90,10 +86,7 @@ export function handleConfigRequest(
   })
 }
 
-/**
- * Where the dev tools component lives: the TypeScript source in a library
- * checkout, the compiled file in the published package.
- */
+// The published package ships dist/ but not src/
 function resolveDevToolsEntry(): string | null {
   const pluginDir = path.dirname(fileURLToPath(import.meta.url))
   const candidates = [
@@ -103,10 +96,6 @@ function resolveDevToolsEntry(): string | null {
   return candidates.find((candidate) => fs.existsSync(candidate)) ?? null
 }
 
-/**
- * Inline module that loads <edge-app-devtools> and turns on its dev server
- * features. Reuses the app's own element when it has one.
- */
 export function devToolsInjectionScript(entry: string): string {
   const importPath = `/@fs/${entry.replace(/\\/g, '/').replace(/^\/+/, '')}`
   return `
@@ -175,7 +164,6 @@ export function screenlyDevServer(): Plugin {
         next()
       })
     },
-    // Dev server only (`apply: 'serve'`), so the panel never reaches a build.
     transformIndexHtml() {
       const entry = resolveDevToolsEntry()
       if (!entry) {

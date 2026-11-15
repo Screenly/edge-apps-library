@@ -216,11 +216,10 @@ describe('<edge-app-devtools> dev server status and controls', () => {
     const radio = element.shadowRoot!.querySelector<HTMLInputElement>(
       'input[name="network"][value="hang"]',
     )!
-    // jsdom can't reload; the mode must be stored before it tries to.
     try {
       radio.click()
     } catch {
-      // ignore jsdom's "not implemented" navigation error
+      // jsdom can't navigate
     }
     expect(sessionStorage.getItem(NETWORK_STORAGE_KEY)).toBe('hang')
   })
